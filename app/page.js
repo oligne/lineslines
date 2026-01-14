@@ -16,6 +16,7 @@ export default function Home() {
   const [error, setError] = useState(null);
   const [userPopups, setUserPopups] = useState([]); // tableau d'utilisateurs sélectionnés
   const [showWelcome, setShowWelcome] = useState(true);
+  const [welcomeClosedManually, setWelcomeClosedManually] = useState(false);
   const heartbeatRef = useRef();
 
   // Heartbeat pour signaler qu'on est en ligne
@@ -49,8 +50,8 @@ export default function Home() {
   useEffect(() => {
     // Ferme la bienvenue si on ouvre un user, la rouvre si aucun user
     if (userPopups.length > 0) setShowWelcome(false);
-    else setShowWelcome(true);
-  }, [userPopups]);
+    else if (!welcomeClosedManually) setShowWelcome(true);
+  }, [userPopups, welcomeClosedManually]);
 
   useEffect(() => {
     fetch('/api/relations')
@@ -162,21 +163,7 @@ export default function Home() {
           <div style={{pointerEvents: 'auto'}}>
             <SidePanel onClose={async () => {
               setShowWelcome(false);
-              if (me && me.id) {
-                try {
-                  const res = await fetch(`/api/users/${me.id}`, {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ starter: 0 })
-                  });
-                  if (!res.ok) {
-                    const msg = await res.text();
-                    setError('PATCH /api/users/' + me.id + ': ' + res.status + ' ' + msg);
-                  }
-                } catch (e) {
-                  setError('PATCH /api/users/' + me.id + ': ' + e.message);
-                }
-              }
+              setWelcomeClosedManually(true);
             }} />
           </div>
         )}

@@ -531,6 +531,7 @@ function Home() {
     const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
     const [userPopups, setUserPopups] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])([]); // tableau d'utilisateurs sélectionnés
     const [showWelcome, setShowWelcome] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(true);
+    const [welcomeClosedManually, setWelcomeClosedManually] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(false);
     const heartbeatRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])();
     // Heartbeat pour signaler qu'on est en ligne
     // useEffect(() => {
@@ -560,9 +561,10 @@ function Home() {
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         // Ferme la bienvenue si on ouvre un user, la rouvre si aucun user
         if (userPopups.length > 0) setShowWelcome(false);
-        else setShowWelcome(true);
+        else if (!welcomeClosedManually) setShowWelcome(true);
     }, [
-        userPopups
+        userPopups,
+        welcomeClosedManually
     ]);
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useEffect"])(()=>{
         fetch('/api/relations').then((res)=>res.json()).then(setRelations).catch(()=>setRelations([]));
@@ -649,7 +651,7 @@ function Home() {
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/page.js",
-                lineNumber: 134,
+                lineNumber: 135,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -678,7 +680,7 @@ function Home() {
                         children: "what if everything was visible ?"
                     }, void 0, false, {
                         fileName: "[project]/app/page.js",
-                        lineNumber: 138,
+                        lineNumber: 139,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -693,13 +695,13 @@ function Home() {
                         children: "refresh ↻"
                     }, void 0, false, {
                         fileName: "[project]/app/page.js",
-                        lineNumber: 139,
+                        lineNumber: 140,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/page.js",
-                lineNumber: 137,
+                lineNumber: 138,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -720,12 +722,12 @@ function Home() {
                     }
                 }, void 0, false, {
                     fileName: "[project]/app/page.js",
-                    lineNumber: 143,
+                    lineNumber: 144,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/page.js",
-                lineNumber: 142,
+                lineNumber: 143,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -750,34 +752,16 @@ function Home() {
                         children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$SidePanel$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
                             onClose: async ()=>{
                                 setShowWelcome(false);
-                                if (me && me.id) {
-                                    try {
-                                        const res = await fetch(`/api/users/${me.id}`, {
-                                            method: 'PATCH',
-                                            headers: {
-                                                'Content-Type': 'application/json'
-                                            },
-                                            body: JSON.stringify({
-                                                starter: 0
-                                            })
-                                        });
-                                        if (!res.ok) {
-                                            const msg = await res.text();
-                                            setError('PATCH /api/users/' + me.id + ': ' + res.status + ' ' + msg);
-                                        }
-                                    } catch (e) {
-                                        setError('PATCH /api/users/' + me.id + ': ' + e.message);
-                                    }
-                                }
+                                setWelcomeClosedManually(true);
                             }
                         }, void 0, false, {
                             fileName: "[project]/app/page.js",
-                            lineNumber: 163,
+                            lineNumber: 164,
                             columnNumber: 13
                         }, this)
                     }, void 0, false, {
                         fileName: "[project]/app/page.js",
-                        lineNumber: 162,
+                        lineNumber: 163,
                         columnNumber: 11
                     }, this),
                     userPopups.length > 0 && userPopups.map((u)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -794,24 +778,24 @@ function Home() {
                                 isLinked: !!relations.find((r)=>r.user1_id === me?.id && r.user2_id === u.id || r.user2_id === me?.id && r.user1_id === u.id)
                             }, void 0, false, {
                                 fileName: "[project]/app/page.js",
-                                lineNumber: 185,
+                                lineNumber: 172,
                                 columnNumber: 13
                             }, this)
                         }, u.id, false, {
                             fileName: "[project]/app/page.js",
-                            lineNumber: 184,
+                            lineNumber: 171,
                             columnNumber: 11
                         }, this))
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/page.js",
-                lineNumber: 148,
+                lineNumber: 149,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/page.js",
-        lineNumber: 132,
+        lineNumber: 133,
         columnNumber: 5
     }, this);
 }

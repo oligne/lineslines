@@ -129,17 +129,24 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
         const keywords = node.keywords || [];
         ctx.font = "32px Menlo, monospace";
         let x = 90;
-        const y = 120;
-        // Affichage des mots-clés séparés par des virgules
+        let y = 120;
+        const maxKeywordsWidth = 410;
+        // Affichage des mots-clés séparés par des virgules, retour à la ligne si trop long
         keywords.forEach((kw, i) => {
+            const kwText = `#${kw}${i < keywords.length - 1 ? ',' : ''}`;
+            const kwWidth = ctx.measureText(kwText).width;
+            if (x + kwWidth > 90 + maxKeywordsWidth) {
+                x = 90;
+                y += 36; // saute une ligne
+            }
             ctx.fillStyle = isMe ? "#e22" : "#444";
-            ctx.fillText(`#${kw}${i < keywords.length - 1 ? ',' : ''}` , x, y);
+            ctx.fillText(kwText, x, y);
             // Croix de suppression si c'est moi (affichage visuel seulement)
             if (isMe) {
                 ctx.save();
                 ctx.strokeStyle = "#e22";
                 ctx.lineWidth = 3;
-                const crossX = x + ctx.measureText(`#${kw}${i < keywords.length - 1 ? ',' : ''}`).width + 18;
+                const crossX = x + kwWidth + 18;
                 const crossY = y - 12;
                 ctx.beginPath();
                 ctx.moveTo(crossX, crossY);
@@ -149,10 +156,14 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                 ctx.stroke();
                 ctx.restore();
             }
-            x += ctx.measureText(`#${kw}${i < keywords.length - 1 ? ',' : ''}`).width + (isMe ? 50 : 36);
+            x += kwWidth + (isMe ? 50 : 36);
         });
         // Champ d'ajout si c'est moi et <3 keywords (affichage visuel seulement)
         if (isMe && keywords.length < 3) {
+            if (x + ctx.measureText("+ mot-clé").width > 90 + maxKeywordsWidth) {
+                x = 90;
+                y += 36;
+            }
             ctx.fillStyle = "#aaa";
             ctx.fillText("+ mot-clé", x, y);
         }
@@ -216,7 +227,10 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
 
     // Keywords helpers
     function getKeywords(node) {
-        return node.keywords || [];
+        if (!node) return [];
+        if (Array.isArray(node.keywords)) return node.keywords;
+        if (typeof node.keywords === 'string') return node.keywords.split(',').map(k => k.trim()).filter(Boolean);
+        return [];
     }
     async function handleKeywordAdd() {
         if (!keywordEdit.trim() || !selectedNode) return;
@@ -256,6 +270,39 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                     : n
             )
         }));
+    }
+
+    // Ajoute ces deux fonctions dans le composant :
+    function handleKeywordAddCustom() {
+        const meNode = graphData.nodes.find(n => n.id === myNodeId);
+        if (!keywordEdit.trim() || !meNode) return;
+        const newKeywords = [...(getKeywords(meNode)), keywordEdit.trim()].slice(0, 3);
+        fetch(`/api/users/${myNodeId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ keywords: newKeywords }),
+            headers: { 'Content-Type': 'application/json' },
+        }).then(() => {
+            setGraphData(gd => ({
+                ...gd,
+                nodes: gd.nodes.map(n => n.id === myNodeId ? { ...n, keywords: newKeywords } : n)
+            }));
+            setKeywordEdit("");
+        });
+    }
+    function handleKeywordRemoveCustom(idx) {
+        const meNode = graphData.nodes.find(n => n.id === myNodeId);
+        if (!meNode) return;
+        const newKeywords = (getKeywords(meNode) || []).filter((_, i) => i !== idx);
+        fetch(`/api/users/${myNodeId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ keywords: newKeywords }),
+            headers: { 'Content-Type': 'application/json' },
+        }).then(() => {
+            setGraphData(gd => ({
+                ...gd,
+                nodes: gd.nodes.map(n => n.id === myNodeId ? { ...n, keywords: newKeywords } : n)
+            }));
+        });
     }
 
     return (
@@ -383,17 +430,19 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                         position: 'fixed',
                         right: 90,
                         bottom: 32,
-                        width: 258,
-                        minHeight: 200,
+                        width: 320,
+                        minWidth: 320,
+                        maxWidth: 320,
+                        minHeight: 120,
                         background: 'rgba(255,255,255,0.98)',
                         borderRadius: 16,
                         boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
                         zIndex: 1099,
                         padding: '28px 24px',
                         fontFamily: 'Menlo, monospace',
-                        fontSize: 10,
+                        fontSize: 20,
                         color: '#111',
-                        //display: 'flex',
+                        display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'flex-start',
                         boxSizing: 'border-box',
@@ -402,7 +451,7 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                 >
                     {/* Ligne pseudo */}
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, width: '100%' }}>
-                        <span style={{ fontWeight: 700, fontSize: 20, marginRight: 8 }}>&gt; USER/</span>
+                        <span style={{ fontWeight: 700, fontSize: 20, marginRight: 0 }}>&gt; USER/</span>
                         <input
                             value={editValue}
                             onChange={e => {
@@ -448,7 +497,7 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                                 padding: '0 2px',
                                 boxSizing: 'border-box',
                             }}
-                            onClick={() => handleKeywordRemove(i)}
+                            onClick={() => handleKeywordRemoveCustom(i)}
                             >{kw}{i < arr.length - 1 ? ',' : ''}</span>
                         ))}
                         {getKeywords({ id: myNodeId, ...graphData.nodes.find(n => n.id === myNodeId) }).length < 3 && (
@@ -456,7 +505,7 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                                 <input
                                     value={keywordEdit}
                                     onChange={e => setKeywordEdit(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleKeywordAdd(); }}
+                                    onKeyDown={e => { if (e.key === 'Enter') handleKeywordAddCustom(); }}
                                     style={{
                                         fontFamily: 'Menlo',
                                         fontSize: 16,
