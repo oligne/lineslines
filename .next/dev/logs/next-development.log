@@ -1,1 +1,17 @@
-[00:00:00.821] Server  LOG     ✓ Ready in 584ms
+[00:00:00.462] Server  LOG     ✓ Ready in 321ms
+[00:03:18.185] Server  LOG     ✓ Compiled in 12ms
+[00:09:18.938] Server  LOG     ✓ Compiled in 17ms
+[00:18:23.417] Server  LOG     ✓ Compiled in 4ms
+[01:09:36.184] Server  LOG     ✓ Compiled in 3ms
+[01:15:53.481] Server  LOG     ✓ Compiled in 4ms
+[01:16:01.583] Server  LOG     ✓ Compiled in 3ms
+[01:16:18.819] Server  LOG     ✓ Compiled in 3ms
+[01:16:28.837] Server  LOG     ✓ Compiled in 3ms
+[01:17:32.110] Server  LOG     ✓ Compiled in 3ms
+[01:17:42.095] Server  LOG     ✓ Compiled in 3ms
+[01:18:11.066] Server  LOG     ✓ Compiled in 60ms
+[01:18:11.330] Browser ERROR   uncaughtError: TypeError: user.keywords.join is not a function. (In 'user.keywords.join(', ')', 'user.keywords.join' is undefined)
+[01:18:14.386] Browser ERROR   uncaughtError: TypeError: user.keywords.join is not a function. (In 'user.keywords.join(', ')', 'user.keywords.join' is undefined)
+[01:19:12.582] Server  WARN    ⚠ Fast Refresh had to perform a full reload due to a runtime error.
+[01:19:12.642] Server  LOG     ✓ Compiled in 4ms
+[01:23:26.882] Server  LOG     ✓ Compiled in 3ms

@@ -10,6 +10,13 @@ export async function PATCH(request, context) {
       sql: 'UPDATE users SET pseudo = ? WHERE id = ?',
       args: [body.pseudo, id],
     });
+  } else if (body.keywords !== undefined) {
+    // On stocke les mots-clés comme une chaîne séparée par des virgules
+    const keywordsStr = Array.isArray(body.keywords) ? body.keywords.join(',') : '';
+    await turso.execute({
+      sql: 'UPDATE users SET keywords = ? WHERE id = ?',
+      args: [keywordsStr, id],
+    });
   } else if (body.last_seen !== undefined) {
     await turso.execute({
       sql: 'UPDATE users SET last_seen = ? WHERE id = ?',

@@ -115,15 +115,16 @@ function FocusGraph({data, userIp}) {
         ctx.font = "32px Menlo, monospace";
         let x = 90;
         const y = 120;
+        // Affichage des mots-clés séparés par des virgules
         keywords.forEach((kw, i) => {
             ctx.fillStyle = isMe ? "#e22" : "#444";
-            ctx.fillText(`#${kw}`, x, y);
+            ctx.fillText(`#${kw}${i < keywords.length - 1 ? ',' : ''}` , x, y);
             // Croix de suppression si c'est moi (affichage visuel seulement)
             if (isMe) {
                 ctx.save();
                 ctx.strokeStyle = "#e22";
                 ctx.lineWidth = 3;
-                const crossX = x + ctx.measureText(`#${kw}`).width + 18;
+                const crossX = x + ctx.measureText(`#${kw}${i < keywords.length - 1 ? ',' : ''}`).width + 18;
                 const crossY = y - 12;
                 ctx.beginPath();
                 ctx.moveTo(crossX, crossY);
@@ -133,7 +134,7 @@ function FocusGraph({data, userIp}) {
                 ctx.stroke();
                 ctx.restore();
             }
-            x += ctx.measureText(`#${kw}`).width + (isMe ? 50 : 36);
+            x += ctx.measureText(`#${kw}${i < keywords.length - 1 ? ',' : ''}`).width + (isMe ? 50 : 36);
         });
         // Champ d'ajout si c'est moi et <3 keywords (affichage visuel seulement)
         if (isMe && keywords.length < 3) {
@@ -148,12 +149,13 @@ function FocusGraph({data, userIp}) {
     }
 
     function handleNodeClick(node) {
-        setSelectedNode(node);
         if (node.id === myNodeId) {
             setEditingId(node.id);
             setEditValue(node.label || node.pseudo || node.id);
+            setSelectedNode(null); // Pas de popup pour soi
             setKeywordEdit("");
         } else {
+            setSelectedNode(node); // Popup pour les autres
             setEditingId(null);
         }
     }
@@ -282,14 +284,14 @@ function FocusGraph({data, userIp}) {
                                 color: '#111',
                                 borderRadius: 8,
                                 padding: '4px 16px',
-                                marginRight: 10,
+                                marginRight: i < getKeywords(selectedNode).length - 1 ? 2 : 10,
                                 marginBottom: 2,
                                 fontSize: 20,
                                 fontWeight: 600,
                                 cursor: selectedNode.id === myNodeId ? 'pointer' : 'default'
                             }}
                             onClick={selectedNode.id === myNodeId ? () => handleKeywordRemove(i) : undefined}
-                            >{kw}</span>
+                            >{kw}{i < getKeywords(selectedNode).length - 1 ? ',' : ''}</span>
                         ))}
                         {selectedNode.id === myNodeId && getKeywords(selectedNode).length < 3 && (
                             <>

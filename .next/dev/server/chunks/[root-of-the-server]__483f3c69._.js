@@ -83,6 +83,16 @@ async function PATCH(request, context) {
                 id
             ]
         });
+    } else if (body.keywords !== undefined) {
+        // On stocke les mots-clés comme une chaîne séparée par des virgules
+        const keywordsStr = Array.isArray(body.keywords) ? body.keywords.join(',') : '';
+        await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$turso$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["turso"].execute({
+            sql: 'UPDATE users SET keywords = ? WHERE id = ?',
+            args: [
+                keywordsStr,
+                id
+            ]
+        });
     } else if (body.last_seen !== undefined) {
         await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$turso$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["turso"].execute({
             sql: 'UPDATE users SET last_seen = ? WHERE id = ?',

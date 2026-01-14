@@ -138,7 +138,8 @@ function Home() {
     const nodes = users.map((u)=>({
             id: u.id,
             group: 1,
-            label: u.pseudo
+            label: u.pseudo,
+            keywords: typeof u.keywords === 'string' && u.keywords.length > 0 ? u.keywords.split(',').map((k)=>k.trim()).filter(Boolean) : []
         }));
     const links = []; // aucun lien
     const graphData = JSON.stringify({
@@ -159,7 +160,7 @@ function Home() {
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/page.js",
-                lineNumber: 86,
+                lineNumber: 91,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -169,7 +170,9 @@ function Home() {
                     justifyContent: 'center',
                     alignItems: 'center',
                     marginBottom: '2rem',
-                    position: 'relative'
+                    position: 'relative',
+                    marginTop: 0,
+                    paddingTop: 2
                 },
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -181,27 +184,28 @@ function Home() {
                         children: "what if everything was visible ?"
                     }, void 0, false, {
                         fileName: "[project]/app/page.js",
-                        lineNumber: 89,
+                        lineNumber: 94,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                         className: "menu",
                         style: {
                             position: 'absolute',
-                            right: 32,
-                            fontSize: 18
+                            top: 0,
+                            right: 12,
+                            fontSize: 12
                         },
                         onClick: refresh,
                         children: "refresh ↻"
                     }, void 0, false, {
                         fileName: "[project]/app/page.js",
-                        lineNumber: 90,
+                        lineNumber: 95,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/page.js",
-                lineNumber: 88,
+                lineNumber: 93,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -214,18 +218,18 @@ function Home() {
                     data: graphData
                 }, void 0, false, {
                     fileName: "[project]/app/page.js",
-                    lineNumber: 94,
+                    lineNumber: 99,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/page.js",
-                lineNumber: 93,
+                lineNumber: 98,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/page.js",
-        lineNumber: 84,
+        lineNumber: 89,
         columnNumber: 5
     }, this);
 }

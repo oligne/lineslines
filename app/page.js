@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { getUserPositions } from '../lib/forceGraph';
 import FocusGraph from './components/FocusGraphWrapper';
+import SidePanel from './components/SidePanel';
 
 export default function Home() {
   const [users, setUsers] = useState([]);
@@ -76,7 +77,13 @@ export default function Home() {
   const positions = getUserPositions(users);
 
   // Construction du graph pour FocusGraph
-  const nodes = users.map(u => ({ id: u.id, group: 1, label: u.pseudo }));
+  const nodes = users.map(u => ({
+    id: u.id,
+    group: 1,
+    label: u.pseudo,
+    keywords: typeof u.keywords === 'string' && u.keywords.length > 0 ? u.keywords.split(',').map(k => k.trim()).filter(Boolean) : [],
+    ip: u.ip || null
+  }));
   const links = []; // aucun lien
   const graphData = JSON.stringify({ nodes, links });
 
@@ -85,14 +92,15 @@ export default function Home() {
       {error && (
         <div style={{ color: 'red', fontFamily: 'Menlo', margin: 16 }}>Erreur API: {error}</div>
       )}
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '2rem', position: 'relative' }}>
+      <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '2rem', position: 'relative', marginTop: 0, paddingTop: 2 }}>
         <span className="title" style={{ fontSize: 20, textAlign: 'center' }}>what if everything was visible ?</span>
-        <button className="menu" style={{ position: 'absolute', right: 32, fontSize: 18 }} onClick={refresh}>refresh ↻</button>
+        <button className="menu" style={{ position: 'absolute', top: 0, right: 12, fontSize: 12 }} onClick={refresh}>refresh ↻</button>
       </div>
       {/* Affichage 3D Force Graph (client only) */}
       <div style={{ width: '100vw', height: '70vh', minHeight: 400 }}>
-        <FocusGraph data={graphData} />
+        <FocusGraph data={graphData} userIp={me?.ip} />
       </div>
+      <SidePanel users={users} me={me} onlineUsers={onlineUsers} />
       {/* Ancien affichage 2D en commentaire pour test */}
       {/*
       <div style={{ position: 'relative', width: '100vw', height: '70vh', minHeight: 400 }}>
