@@ -16,7 +16,7 @@ var _s = __turbopack_context__.k.signature();
 ;
 ;
 ;
-function FocusGraph({ data, userIp }) {
+function FocusGraph({ data, userIp, onUserNodeClick }) {
     _s();
     const fgRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRef"])(null);
     const [graphData, setGraphData] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])({
@@ -33,6 +33,8 @@ function FocusGraph({ data, userIp }) {
     const [selectedNode, setSelectedNode] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(null);
     // Keywords state local pour édition (pour ton node)
     const [keywordEdit, setKeywordEdit] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])("");
+    // Fenêtre de personnalisation en bas à droite pour son propre point
+    const [showCustomize, setShowCustomize] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useState"])(false);
     // Resize listener pour canvas plein écran
     (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$index$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useEffect"])({
         "FocusGraph.useEffect": ()=>{
@@ -142,23 +144,36 @@ function FocusGraph({ data, userIp }) {
         canvas.height = 160;
         const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Fond transparent (pas de fillRect blanc)
+        // ctx.fillStyle = "rgba(255,255,255,1)"; // supprimé
+        // ctx.fillRect(0, 0, canvas.width, canvas.height); // supprimé
+        // Décalage horizontal pour aligner le point avec le lien
+        const decal = 20;
         ctx.beginPath();
-        ctx.arc(40, 60, 28, 0, 2 * Math.PI);
+        ctx.arc(40, 60, 28, 0, 2 * Math.PI); // cercle centré
         ctx.fillStyle = isMe ? "#e22" : "#111";
         ctx.shadowColor = '#888';
         ctx.shadowBlur = 8;
         ctx.fill();
-        ctx.font = "bold 54px Menlo, monospace";
+        // --- PSEUDO: font size auto-fit ---
+        let fontSize = 54;
+        const label = isEditing ? editValue : node.label || node.pseudo || node.id;
+        ctx.font = `bold ${fontSize}px Menlo, monospace`;
+        let textWidth = ctx.measureText(`/user/${label}`).width;
+        while(textWidth > 410 && fontSize > 24){
+            fontSize -= 2;
+            ctx.font = `bold ${fontSize}px Menlo, monospace`;
+            textWidth = ctx.measureText(`/user/${label}`).width;
+        }
         ctx.fillStyle = "#111";
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        const label = isEditing ? editValue : node.label || node.pseudo || node.id;
         ctx.fillText(`/user/${label}`, 90, 64);
         // Caret clignotant noir UNIQUEMENT sur le node courant (toujours)
         if (isMe && caretVisible) {
-            const textWidth = ctx.measureText(`/user/${label}`).width;
+            const caretTextWidth = ctx.measureText(`/user/${label}`).width;
             ctx.fillStyle = '#111';
-            ctx.fillRect(90 + textWidth + 6, 35, 4, 58);
+            ctx.fillRect(90 + caretTextWidth + 6, 35, 4, 58);
         }
         // Affiche/édite les mots-clés sous le pseudo (grosse ligne)
         const keywords = node.keywords || [];
@@ -195,19 +210,25 @@ function FocusGraph({ data, userIp }) {
         const material = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$three$2f$build$2f$three$2e$core$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["SpriteMaterial"]({
             map: texture
         });
+        material.transparent = true;
+        material.alphaTest = 0.05;
         const sprite = new __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$three$2f$build$2f$three$2e$core$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Sprite"](material);
         sprite.scale.set(22, 7, 1);
+        sprite.center.set(40 / 520, 0.60); // centre du cercle, vertical ajusté
         return sprite;
     }
     function handleNodeClick(node) {
-        if (node.id === myNodeId) {
+        if (node.ip === userIp) {
             setEditingId(node.id);
             setEditValue(node.label || node.pseudo || node.id);
-            setSelectedNode(null); // Pas de popup pour soi
+            setSelectedNode(null); // Masque le popup classique
             setKeywordEdit("");
+            setShowCustomize(true); // Affiche la fenêtre profil perso
         } else {
-            setSelectedNode(node); // Popup pour les autres
             setEditingId(null);
+            setSelectedNode(null);
+            setShowCustomize(false);
+            if (onUserNodeClick) onUserNodeClick(node);
         }
     }
     // Edition du pseudo sur clic (uniquement sur son node)
@@ -326,45 +347,52 @@ function FocusGraph({ data, userIp }) {
                     nodeAutoColorBy: "group",
                     onNodeClick: handleNodeClick,
                     nodeThreeObject: nodeThreeObject,
+                    linkColor: ()=>'#111',
+                    linkOpacity: 0.95,
+                    linkWidth: 0.1,
                     backgroundColor: "rgba(0,0,0,0)",
                     width: dimensions.width,
                     height: dimensions.height
                 }, void 0, false, {
                     fileName: "[project]/app/components/FocusGraph.tsx",
-                    lineNumber: 243,
+                    lineNumber: 264,
                     columnNumber: 17
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/components/FocusGraph.tsx",
-                lineNumber: 242,
+                lineNumber: 263,
                 columnNumber: 13
             }, this),
             selectedNode && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 className: "profile-popup",
                 style: {
                     position: 'fixed',
-                    left: 16,
-                    bottom: 16,
+                    top: 30,
+                    left: 12,
                     width: 320,
+                    minWidth: 320,
+                    maxWidth: 320,
                     minHeight: 120,
                     background: 'rgba(255,255,255,0.98)',
-                    borderRadius: 12,
+                    borderRadius: 16,
                     boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
                     zIndex: 1001,
                     padding: '28px 24px',
                     fontFamily: 'Menlo, monospace',
-                    fontSize: 22,
+                    fontSize: 20,
                     color: '#111',
                     display: 'flex',
                     flexDirection: 'column',
-                    alignItems: 'flex-start'
+                    alignItems: 'flex-start',
+                    boxSizing: 'border-box',
+                    gap: 0
                 },
                 children: [
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         style: {
                             fontWeight: 700,
                             marginBottom: 12,
-                            fontSize: 26
+                            fontSize: 24
                         },
                         children: [
                             "/user/",
@@ -372,25 +400,26 @@ function FocusGraph({ data, userIp }) {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/components/FocusGraph.tsx",
-                        lineNumber: 277,
+                        lineNumber: 305,
                         columnNumber: 21
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         style: {
-                            marginBottom: 8,
-                            fontSize: 20
+                            marginBottom: 30,
+                            fontSize: 18,
+                            width: '100%'
                         },
                         children: [
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                 style: {
                                     fontWeight: 600,
-                                    fontSize: 20,
+                                    fontSize: 18,
                                     marginRight: 10
                                 },
                                 children: "mots-clés :"
                             }, void 0, false, {
                                 fileName: "[project]/app/components/FocusGraph.tsx",
-                                lineNumber: 279,
+                                lineNumber: 307,
                                 columnNumber: 25
                             }, this),
                             getKeywords(selectedNode).map((kw, i)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -402,9 +431,10 @@ function FocusGraph({ data, userIp }) {
                                         padding: '4px 16px',
                                         marginRight: i < getKeywords(selectedNode).length - 1 ? 2 : 10,
                                         marginBottom: 2,
-                                        fontSize: 20,
+                                        fontSize: 18,
                                         fontWeight: 600,
-                                        cursor: selectedNode.id === myNodeId ? 'pointer' : 'default'
+                                        cursor: selectedNode.id === myNodeId ? 'pointer' : 'default',
+                                        boxSizing: 'border-box'
                                     },
                                     onClick: selectedNode.id === myNodeId ? ()=>handleKeywordRemove(i) : undefined,
                                     children: [
@@ -413,7 +443,7 @@ function FocusGraph({ data, userIp }) {
                                     ]
                                 }, i, true, {
                                     fileName: "[project]/app/components/FocusGraph.tsx",
-                                    lineNumber: 281,
+                                    lineNumber: 309,
                                     columnNumber: 29
                                 }, this)),
                             selectedNode.id === myNodeId && getKeywords(selectedNode).length < 3 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
@@ -426,19 +456,20 @@ function FocusGraph({ data, userIp }) {
                                         },
                                         style: {
                                             fontFamily: 'Menlo',
-                                            fontSize: 20,
+                                            fontSize: 18,
                                             border: 'none',
                                             outline: 'none',
                                             background: 'none',
                                             borderBottom: '2px solid #111',
                                             marginLeft: 8,
-                                            width: 90
+                                            width: 90,
+                                            boxSizing: 'border-box'
                                         },
                                         maxLength: 16,
                                         placeholder: "+ keyword"
                                     }, void 0, false, {
                                         fileName: "[project]/app/components/FocusGraph.tsx",
-                                        lineNumber: 298,
+                                        lineNumber: 327,
                                         columnNumber: 33
                                     }, this),
                                     caretVisible && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -449,7 +480,7 @@ function FocusGraph({ data, userIp }) {
                                         }
                                     }, void 0, false, {
                                         fileName: "[project]/app/components/FocusGraph.tsx",
-                                        lineNumber: 315,
+                                        lineNumber: 345,
                                         columnNumber: 50
                                     }, this)
                                 ]
@@ -457,19 +488,246 @@ function FocusGraph({ data, userIp }) {
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/components/FocusGraph.tsx",
-                        lineNumber: 278,
+                        lineNumber: 306,
                         columnNumber: 21
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/components/FocusGraph.tsx",
-                lineNumber: 256,
+                lineNumber: 280,
+                columnNumber: 17
+            }, this),
+            myNodeId && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                onClick: ()=>setShowCustomize((v)=>!v),
+                style: {
+                    position: 'fixed',
+                    right: 24,
+                    bottom: 24,
+                    width: 54,
+                    height: 54,
+                    borderRadius: '50%',
+                    background: '#111',
+                    border: 'none',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                    zIndex: 1100,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    padding: 0
+                },
+                title: "Personnaliser mon point",
+                children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                    style: {
+                        color: '#fff',
+                        fontSize: 20,
+                        fontFamily: 'Menlo'
+                    },
+                    children: "😶‍🌫️"
+                }, void 0, false, {
+                    fileName: "[project]/app/components/FocusGraph.tsx",
+                    lineNumber: 375,
+                    columnNumber: 21
+                }, this)
+            }, void 0, false, {
+                fileName: "[project]/app/components/FocusGraph.tsx",
+                lineNumber: 353,
+                columnNumber: 17
+            }, this),
+            showCustomize && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                className: "customize-popup",
+                style: {
+                    position: 'fixed',
+                    right: 90,
+                    bottom: 32,
+                    width: 258,
+                    minHeight: 200,
+                    background: 'rgba(255,255,255,0.98)',
+                    borderRadius: 16,
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                    zIndex: 1099,
+                    padding: '28px 24px',
+                    fontFamily: 'Menlo, monospace',
+                    fontSize: 10,
+                    color: '#111',
+                    //display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'flex-start',
+                    boxSizing: 'border-box',
+                    gap: 0
+                },
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        style: {
+                            display: 'flex',
+                            alignItems: 'center',
+                            marginBottom: 8,
+                            width: '100%'
+                        },
+                        children: [
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                style: {
+                                    fontWeight: 700,
+                                    fontSize: 20,
+                                    marginRight: 8
+                                },
+                                children: "> USER/"
+                            }, void 0, false, {
+                                fileName: "[project]/app/components/FocusGraph.tsx",
+                                lineNumber: 405,
+                                columnNumber: 25
+                            }, this),
+                            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                value: editValue,
+                                onChange: (e)=>{
+                                    setEditValue(e.target.value);
+                                    if (editingId !== null) {
+                                        setGraphData((gd)=>({
+                                                ...gd,
+                                                nodes: gd.nodes.map((n)=>n.id === editingId ? {
+                                                        ...n,
+                                                        label: e.target.value
+                                                    } : n)
+                                            }));
+                                    }
+                                },
+                                onKeyDown: (e)=>{
+                                    if (e.key === 'Enter') handleInputBlurOrEnter();
+                                },
+                                style: {
+                                    fontFamily: 'Menlo',
+                                    fontWeight: 600,
+                                    fontSize: 20,
+                                    border: 'none',
+                                    outline: 'none',
+                                    background: 'none',
+                                    borderBottom: '2px solid #111',
+                                    color: '#111',
+                                    width: 110,
+                                    marginRight: 2,
+                                    padding: 0,
+                                    lineHeight: 1.1,
+                                    boxSizing: 'border-box'
+                                },
+                                maxLength: 24
+                            }, void 0, false, {
+                                fileName: "[project]/app/components/FocusGraph.tsx",
+                                lineNumber: 406,
+                                columnNumber: 25
+                            }, this),
+                            caretVisible && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                style: {
+                                    borderLeft: '2px solid #111',
+                                    height: 20,
+                                    marginLeft: -2
+                                }
+                            }, void 0, false, {
+                                fileName: "[project]/app/components/FocusGraph.tsx",
+                                lineNumber: 435,
+                                columnNumber: 42
+                            }, this)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/components/FocusGraph.tsx",
+                        lineNumber: 404,
+                        columnNumber: 21
+                    }, this),
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+                        style: {
+                            width: '100%',
+                            marginBottom: 2,
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            alignItems: 'center',
+                            gap: 0
+                        },
+                        children: [
+                            getKeywords({
+                                id: myNodeId,
+                                ...graphData.nodes.find((n)=>n.id === myNodeId)
+                            }).map((kw, i, arr)=>/*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                    style: {
+                                        color: '#888',
+                                        fontSize: 16,
+                                        fontWeight: 600,
+                                        marginRight: i < arr.length - 1 ? 2 : 0,
+                                        cursor: 'pointer',
+                                        borderBottom: '1.5px solid #eee',
+                                        marginBottom: 2,
+                                        padding: '0 2px',
+                                        boxSizing: 'border-box'
+                                    },
+                                    onClick: ()=>handleKeywordRemove(i),
+                                    children: [
+                                        kw,
+                                        i < arr.length - 1 ? ',' : ''
+                                    ]
+                                }, i, true, {
+                                    fileName: "[project]/app/components/FocusGraph.tsx",
+                                    lineNumber: 440,
+                                    columnNumber: 29
+                                }, this)),
+                            getKeywords({
+                                id: myNodeId,
+                                ...graphData.nodes.find((n)=>n.id === myNodeId)
+                            }).length < 3 && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["Fragment"], {
+                                children: [
+                                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
+                                        value: keywordEdit,
+                                        onChange: (e)=>setKeywordEdit(e.target.value),
+                                        onKeyDown: (e)=>{
+                                            if (e.key === 'Enter') handleKeywordAdd();
+                                        },
+                                        style: {
+                                            fontFamily: 'Menlo',
+                                            fontSize: 16,
+                                            border: 'none',
+                                            outline: 'none',
+                                            background: 'none',
+                                            borderBottom: '1.5px solid #bbb',
+                                            color: '#bbb',
+                                            width: 80,
+                                            marginLeft: 2,
+                                            padding: 0,
+                                            marginBottom: 2,
+                                            boxSizing: 'border-box'
+                                        },
+                                        maxLength: 16,
+                                        placeholder: "+ mot-clé"
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/components/FocusGraph.tsx",
+                                        lineNumber: 456,
+                                        columnNumber: 33
+                                    }, this),
+                                    caretVisible && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
+                                        style: {
+                                            borderLeft: '1.5px solid #bbb',
+                                            height: 14,
+                                            marginLeft: -2
+                                        }
+                                    }, void 0, false, {
+                                        fileName: "[project]/app/components/FocusGraph.tsx",
+                                        lineNumber: 477,
+                                        columnNumber: 50
+                                    }, this)
+                                ]
+                            }, void 0, true)
+                        ]
+                    }, void 0, true, {
+                        fileName: "[project]/app/components/FocusGraph.tsx",
+                        lineNumber: 438,
+                        columnNumber: 21
+                    }, this)
+                ]
+            }, void 0, true, {
+                fileName: "[project]/app/components/FocusGraph.tsx",
+                lineNumber: 380,
                 columnNumber: 17
             }, this)
         ]
     }, void 0, true);
 }
-_s(FocusGraph, "18jV7uuu4B/WDnFDkoJapqMmRY4=");
+_s(FocusGraph, "71cQWD+wXqVOtJZojjKJems3tsY=");
 _c = FocusGraph;
 const __TURBOPACK__default__export__ = FocusGraph;
 var _c;

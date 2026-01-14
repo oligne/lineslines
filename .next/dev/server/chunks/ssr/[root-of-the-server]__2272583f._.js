@@ -55,7 +55,8 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/node_modules/next/dist/server/route-modules/app-page/vendored/ssr/react.js [app-ssr] (ecmascript)");
 ;
 ;
-function SidePanel({ users, me, onlineUsers }) {
+function SidePanel({ users, me, onlineUsers, onUserSelect }) {
+    const [showWelcome, setShowWelcome] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(true);
     return /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
         style: {
             position: 'fixed',
@@ -69,7 +70,7 @@ function SidePanel({ users, me, onlineUsers }) {
             minWidth: 260
         },
         children: [
-            /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+            showWelcome && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                 style: {
                     background: 'rgba(255,255,255,0.98)',
                     borderRadius: 18,
@@ -79,9 +80,28 @@ function SidePanel({ users, me, onlineUsers }) {
                     fontSize: 16,
                     color: '#111',
                     lineHeight: 1.5,
-                    marginBottom: 0
+                    marginBottom: 0,
+                    position: 'relative'
                 },
                 children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                        onClick: ()=>setShowWelcome(false),
+                        style: {
+                            position: 'absolute',
+                            top: 8,
+                            right: 10,
+                            fontSize: 18,
+                            background: 'none',
+                            border: 'none',
+                            cursor: 'pointer',
+                            color: '#888'
+                        },
+                        children: "×"
+                    }, void 0, false, {
+                        fileName: "[project]/app/components/SidePanel.js",
+                        lineNumber: 32,
+                        columnNumber: 11
+                    }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("b", {
                         style: {
                             fontSize: 18
@@ -89,8 +109,8 @@ function SidePanel({ users, me, onlineUsers }) {
                         children: "> Bienvenue sur line's line."
                     }, void 0, false, {
                         fileName: "[project]/app/components/SidePanel.js",
-                        lineNumber: 28,
-                        columnNumber: 9
+                        lineNumber: 33,
+                        columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         style: {
@@ -101,33 +121,33 @@ function SidePanel({ users, me, onlineUsers }) {
                             "Une experimentation numérique,",
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                 fileName: "[project]/app/components/SidePanel.js",
-                                lineNumber: 30,
-                                columnNumber: 41
+                                lineNumber: 35,
+                                columnNumber: 43
                             }, this),
                             "qui au fil des connections,",
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                 fileName: "[project]/app/components/SidePanel.js",
-                                lineNumber: 31,
-                                columnNumber: 38
+                                lineNumber: 36,
+                                columnNumber: 40
                             }, this),
                             "tisse sa toile.",
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                 fileName: "[project]/app/components/SidePanel.js",
-                                lineNumber: 32,
-                                columnNumber: 26
+                                lineNumber: 37,
+                                columnNumber: 28
                             }, this),
                             "Chaque liens dessinent le territoire des usagers,",
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                 fileName: "[project]/app/components/SidePanel.js",
-                                lineNumber: 33,
-                                columnNumber: 60
+                                lineNumber: 38,
+                                columnNumber: 62
                             }, this),
                             "et leurs relations."
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/components/SidePanel.js",
-                        lineNumber: 29,
-                        columnNumber: 9
+                        lineNumber: 34,
+                        columnNumber: 11
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         style: {
@@ -151,19 +171,19 @@ function SidePanel({ users, me, onlineUsers }) {
                                     }
                                 }, void 0, false, {
                                     fileName: "[project]/app/components/SidePanel.js",
-                                    lineNumber: 38,
-                                    columnNumber: 13
+                                    lineNumber: 43,
+                                    columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/components/SidePanel.js",
-                                lineNumber: 37,
-                                columnNumber: 11
+                                lineNumber: 42,
+                                columnNumber: 13
                             }, this),
                             "Vous êtes un point.",
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                 fileName: "[project]/app/components/SidePanel.js",
-                                lineNumber: 40,
-                                columnNumber: 30
+                                lineNumber: 45,
+                                columnNumber: 32
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                 style: {
@@ -184,19 +204,19 @@ function SidePanel({ users, me, onlineUsers }) {
                                     }
                                 }, void 0, false, {
                                     fileName: "[project]/app/components/SidePanel.js",
-                                    lineNumber: 42,
-                                    columnNumber: 13
+                                    lineNumber: 47,
+                                    columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/components/SidePanel.js",
-                                lineNumber: 41,
-                                columnNumber: 11
+                                lineNumber: 46,
+                                columnNumber: 13
                             }, this),
                             "Votre point peut indiquer qui sont ses points-copains.",
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("br", {}, void 0, false, {
                                 fileName: "[project]/app/components/SidePanel.js",
-                                lineNumber: 44,
-                                columnNumber: 65
+                                lineNumber: 49,
+                                columnNumber: 67
                             }, this),
                             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                 style: {
@@ -215,29 +235,28 @@ function SidePanel({ users, me, onlineUsers }) {
                                     }
                                 }, void 0, false, {
                                     fileName: "[project]/app/components/SidePanel.js",
-                                    lineNumber: 46,
-                                    columnNumber: 13
+                                    lineNumber: 51,
+                                    columnNumber: 15
                                 }, this)
                             }, void 0, false, {
                                 fileName: "[project]/app/components/SidePanel.js",
-                                lineNumber: 45,
-                                columnNumber: 11
+                                lineNumber: 50,
+                                columnNumber: 13
                             }, this),
                             "Vous vous reconnaîtrez entre vous grâce à vos mots-clés."
                         ]
                     }, void 0, true, {
                         fileName: "[project]/app/components/SidePanel.js",
-                        lineNumber: 36,
-                        columnNumber: 9
+                        lineNumber: 41,
+                        columnNumber: 11
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/components/SidePanel.js",
-                lineNumber: 17,
-                columnNumber: 7
+                lineNumber: 20,
+                columnNumber: 9
             }, this),
             users && users.length > 0 && users.map((user)=>{
-                // Sécurise keywords : toujours un tableau
                 let keywordsArr = [];
                 if (Array.isArray(user.keywords)) {
                     keywordsArr = user.keywords;
@@ -254,8 +273,12 @@ function SidePanel({ users, me, onlineUsers }) {
                         fontSize: 15,
                         color: '#111',
                         marginBottom: 0,
-                        marginTop: 0
+                        marginTop: 0,
+                        cursor: 'pointer',
+                        border: '1.5px solid #eee',
+                        transition: 'border 0.2s'
                     },
+                    onClick: ()=>onUserSelect(user),
                     children: [
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("b", {
                             style: {
@@ -267,7 +290,7 @@ function SidePanel({ users, me, onlineUsers }) {
                             ]
                         }, void 0, true, {
                             fileName: "[project]/app/components/SidePanel.js",
-                            lineNumber: 72,
+                            lineNumber: 82,
                             columnNumber: 13
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -281,25 +304,25 @@ function SidePanel({ users, me, onlineUsers }) {
                                 children: "Aucun mot-clé"
                             }, void 0, false, {
                                 fileName: "[project]/app/components/SidePanel.js",
-                                lineNumber: 74,
+                                lineNumber: 84,
                                 columnNumber: 66
                             }, this)
                         }, void 0, false, {
                             fileName: "[project]/app/components/SidePanel.js",
-                            lineNumber: 73,
+                            lineNumber: 83,
                             columnNumber: 13
                         }, this)
                     ]
                 }, user.id, true, {
                     fileName: "[project]/app/components/SidePanel.js",
-                    lineNumber: 61,
+                    lineNumber: 66,
                     columnNumber: 11
                 }, this);
             })
         ]
     }, void 0, true, {
         fileName: "[project]/app/components/SidePanel.js",
-        lineNumber: 5,
+        lineNumber: 7,
         columnNumber: 5
     }, this);
 }
@@ -316,8 +339,14 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist
 var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$forceGraph$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/lib/forceGraph.js [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$FocusGraphWrapper$2e$tsx__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/app/components/FocusGraphWrapper.tsx [app-ssr] (ecmascript)");
 var __TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$SidePanel$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__ = __turbopack_context__.i("[project]/app/components/SidePanel.js [app-ssr] (ecmascript)");
+(()=>{
+    const e = new Error("Cannot find module './components/UserPopup'");
+    e.code = 'MODULE_NOT_FOUND';
+    throw e;
+})();
 // Page principale
 'use client';
+;
 ;
 ;
 ;
@@ -330,6 +359,7 @@ function Home() {
     const [editValue, setEditValue] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])('');
     const [onlineUsers, setOnlineUsers] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])({});
     const [error, setError] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null);
+    const [userPopup, setUserPopup] = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useState"])(null); // user sélectionné pour popup
     const heartbeatRef = (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["useRef"])();
     // Heartbeat pour signaler qu'on est en ligne
     // useEffect(() => {
@@ -415,7 +445,7 @@ function Home() {
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/page.js",
-                lineNumber: 93,
+                lineNumber: 95,
                 columnNumber: 9
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -439,7 +469,7 @@ function Home() {
                         children: "what if everything was visible ?"
                     }, void 0, false, {
                         fileName: "[project]/app/page.js",
-                        lineNumber: 96,
+                        lineNumber: 98,
                         columnNumber: 9
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -454,13 +484,13 @@ function Home() {
                         children: "refresh ↻"
                     }, void 0, false, {
                         fileName: "[project]/app/page.js",
-                        lineNumber: 97,
+                        lineNumber: 99,
                         columnNumber: 9
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/app/page.js",
-                lineNumber: 95,
+                lineNumber: 97,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -474,27 +504,37 @@ function Home() {
                     userIp: me?.ip
                 }, void 0, false, {
                     fileName: "[project]/app/page.js",
-                    lineNumber: 101,
+                    lineNumber: 103,
                     columnNumber: 9
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/app/page.js",
-                lineNumber: 100,
+                lineNumber: 102,
                 columnNumber: 7
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(__TURBOPACK__imported__module__$5b$project$5d2f$app$2f$components$2f$SidePanel$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["default"], {
                 users: users,
                 me: me,
-                onlineUsers: onlineUsers
+                onlineUsers: onlineUsers,
+                onUserSelect: setUserPopup
             }, void 0, false, {
                 fileName: "[project]/app/page.js",
-                lineNumber: 103,
+                lineNumber: 105,
                 columnNumber: 7
+            }, this),
+            userPopup && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])(UserPopup, {
+                user: userPopup,
+                me: me,
+                onClose: ()=>setUserPopup(null)
+            }, void 0, false, {
+                fileName: "[project]/app/page.js",
+                lineNumber: 107,
+                columnNumber: 9
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/app/page.js",
-        lineNumber: 91,
+        lineNumber: 93,
         columnNumber: 5
     }, this);
 }

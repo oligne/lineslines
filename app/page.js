@@ -1,17 +1,21 @@
 // Page principale
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { getUserPositions } from '../lib/forceGraph';
 import FocusGraph from './components/FocusGraphWrapper';
 import SidePanel from './components/SidePanel';
+import UserPopup from './components/UserPopup';
 
 export default function Home() {
   const [users, setUsers] = useState([]);
+  const [relations, setRelations] = useState([]); // relations entre users
   const [me, setMe] = useState(null);
   const [editId, setEditId] = useState(null);
   const [editValue, setEditValue] = useState('');
   const [onlineUsers, setOnlineUsers] = useState({});
   const [error, setError] = useState(null);
+  const [userPopups, setUserPopups] = useState([]); // tableau d'utilisateurs sélectionnés
+  const [showWelcome, setShowWelcome] = useState(true);
   const heartbeatRef = useRef();
 
   // Heartbeat pour signaler qu'on est en ligne
@@ -40,6 +44,19 @@ export default function Home() {
         refresh();
       })
       .catch(e => setError(e.message));
+  }, []);
+
+  useEffect(() => {
+    // Ferme la bienvenue si on ouvre un user, la rouvre si aucun user
+    if (userPopups.length > 0) setShowWelcome(false);
+    else setShowWelcome(true);
+  }, [userPopups]);
+
+  useEffect(() => {
+    fetch('/api/relations')
+      .then(res => res.json())
+      .then(setRelations)
+      .catch(() => setRelations([]));
   }, []);
 
   function refresh() {
@@ -74,6 +91,20 @@ export default function Home() {
     refresh();
   }
 
+  // Fonction pour créer un lien entre deux users
+  async function createRelation(user1_id, user2_id) {
+    if (!user1_id || !user2_id || user1_id === user2_id) return;
+    await fetch('/api/relations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user1_id, user2_id })
+    });
+    // Refresh relations après création
+    fetch('/api/relations')
+      .then(res => res.json())
+      .then(setRelations);
+  }
+
   const positions = getUserPositions(users);
 
   // Construction du graph pour FocusGraph
@@ -84,23 +115,80 @@ export default function Home() {
     keywords: typeof u.keywords === 'string' && u.keywords.length > 0 ? u.keywords.split(',').map(k => k.trim()).filter(Boolean) : [],
     ip: u.ip || null
   }));
-  const links = []; // aucun lien
+  // Construction des liens à partir des relations, uniquement si les deux users existent
+  const userIds = new Set(users.map(u => u.id));
+  const links = relations
+    .filter(r => userIds.has(r.user1_id) && userIds.has(r.user2_id))
+    .map(r => ({
+      source: r.user1_id,
+      target: r.user2_id
+    }));
   const graphData = JSON.stringify({ nodes, links });
+
+  // Affichage du panneau de bienvenue si starter n'est ni 0, ni '0', ni false, ni null
+  const showWelcomePanel = me && me.starter !== 0 && me.starter !== '0' && me.starter !== false && me.starter != null;
 
   return (
     <main>
       {error && (
         <div style={{ color: 'red', fontFamily: 'Menlo', margin: 16 }}>Erreur API: {error}</div>
       )}
-      <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: '2rem', position: 'relative', marginTop: 0, paddingTop: 2 }}>
+      {/* Titre + refresh tout en haut */}
+      <div style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 0, position: 'fixed', top: 0, left: 0, right: 0, zIndex: 4000, background: 'rgba(255,255,255,0.97)', padding: '10px 0 2px 0', borderBottom: '1px solid #eee' }}>
         <span className="title" style={{ fontSize: 20, textAlign: 'center' }}>what if everything was visible ?</span>
-        <button className="menu" style={{ position: 'absolute', top: 0, right: 12, fontSize: 12 }} onClick={refresh}>refresh ↻</button>
+        <button className="menu" style={{ position: 'absolute', top: 8, right: 24, fontSize: 15 }} onClick={refresh}>refresh ↻</button>
       </div>
       {/* Affichage 3D Force Graph (client only) */}
-      <div style={{ width: '100vw', height: '70vh', minHeight: 400 }}>
-        <FocusGraph data={graphData} userIp={me?.ip} />
+      <div style={{ width: '100vw', height: '70vh', minHeight: 400, marginTop: 54 }}>
+        <FocusGraph data={graphData} userIp={me?.ip} onUserNodeClick={u => {
+          if (u.id !== me?.id) setUserPopups(prev => prev.some(p => p.id === u.id) ? prev : [...prev, u]);
+        }} />
       </div>
-      <SidePanel users={users} me={me} onlineUsers={onlineUsers} />
+      {/* Colonne unique à droite : panneau de bienvenue en haut, profils/notifications en dessous */}
+      <div style={{
+        position: 'fixed',
+        top: 32,
+        right: 32,
+        zIndex: 3000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 12,
+        alignItems: 'flex-end',
+        maxWidth: 340,
+        minWidth: 220,
+        pointerEvents: 'none'
+      }}>
+        {showWelcomePanel && (
+          <div style={{pointerEvents: 'auto'}}>
+            <SidePanel onClose={async () => {
+              setShowWelcome(false);
+              if (me && me.id) {
+                try {
+                  const res = await fetch(`/api/users/${me.id}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ starter: 0 })
+                  });
+                  if (!res.ok) {
+                    const msg = await res.text();
+                    setError('PATCH /api/users/' + me.id + ': ' + res.status + ' ' + msg);
+                  }
+                } catch (e) {
+                  setError('PATCH /api/users/' + me.id + ': ' + e.message);
+                }
+              }
+            }} />
+          </div>
+        )}
+        {userPopups.length > 0 && userPopups.map((u) => (
+          <div key={u.id} style={{pointerEvents: 'auto'}}>
+            <UserPopup user={u} me={me} onClose={() => setUserPopups(prev => prev.filter(p => p.id !== u.id))} small showPseudo
+              onCreateRelation={() => createRelation(me?.id, u.id)}
+              isLinked={!!relations.find(r => (r.user1_id === me?.id && r.user2_id === u.id) || (r.user2_id === me?.id && r.user1_id === u.id))}
+            />
+          </div>
+        ))}
+      </div>
       {/* Ancien affichage 2D en commentaire pour test */}
       {/*
       <div style={{ position: 'relative', width: '100vw', height: '70vh', minHeight: 400 }}>

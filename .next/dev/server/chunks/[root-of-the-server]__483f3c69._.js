@@ -75,6 +75,7 @@ async function PATCH(request, context) {
     const body = await request.json();
     const params = await context.params;
     const id = typeof params === 'object' && 'id' in params ? params.id : params;
+    let updated = false;
     if (body.pseudo !== undefined) {
         await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$turso$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["turso"].execute({
             sql: 'UPDATE users SET pseudo = ? WHERE id = ?',
@@ -83,8 +84,9 @@ async function PATCH(request, context) {
                 id
             ]
         });
-    } else if (body.keywords !== undefined) {
-        // On stocke les mots-clés comme une chaîne séparée par des virgules
+        updated = true;
+    }
+    if (body.keywords !== undefined) {
         const keywordsStr = Array.isArray(body.keywords) ? body.keywords.join(',') : '';
         await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$turso$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["turso"].execute({
             sql: 'UPDATE users SET keywords = ? WHERE id = ?',
@@ -93,7 +95,9 @@ async function PATCH(request, context) {
                 id
             ]
         });
-    } else if (body.last_seen !== undefined) {
+        updated = true;
+    }
+    if (body.last_seen !== undefined) {
         await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$turso$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["turso"].execute({
             sql: 'UPDATE users SET last_seen = ? WHERE id = ?',
             args: [
@@ -101,7 +105,19 @@ async function PATCH(request, context) {
                 id
             ]
         });
-    } else {
+        updated = true;
+    }
+    if (body.starter !== undefined) {
+        await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$turso$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["turso"].execute({
+            sql: 'UPDATE users SET starter = ? WHERE id = ?',
+            args: [
+                body.starter,
+                id
+            ]
+        });
+        updated = true;
+    }
+    if (!updated) {
         return new Response(JSON.stringify({
             error: 'Aucune donnée à mettre à jour.'
         }), {

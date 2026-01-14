@@ -4,7 +4,7 @@ import {useEffect, useRef, useState} from "react";
 import ForceGraph3D, { ForceGraphMethods } from "react-force-graph-3d";
 import * as THREE from "three";
 
-function FocusGraph({data, userIp}) {
+function FocusGraph({data, userIp, onUserNodeClick}) {
     const fgRef = useRef<ForceGraphMethods>(null);
     const [graphData, setGraphData] = useState({nodes: [], links: []});
     const [editingId, setEditingId] = useState(null);
@@ -14,6 +14,8 @@ function FocusGraph({data, userIp}) {
     const [selectedNode, setSelectedNode] = useState(null);
     // Keywords state local pour édition (pour ton node)
     const [keywordEdit, setKeywordEdit] = useState("");
+    // Fenêtre de personnalisation en bas à droite pour son propre point
+    const [showCustomize, setShowCustomize] = useState(false);
 
     // Resize listener pour canvas plein écran
     useEffect(() => {
@@ -92,23 +94,36 @@ function FocusGraph({data, userIp}) {
         canvas.height = 160;
         const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+        // Fond transparent (pas de fillRect blanc)
+        // ctx.fillStyle = "rgba(255,255,255,1)"; // supprimé
+        // ctx.fillRect(0, 0, canvas.width, canvas.height); // supprimé
+        // Décalage horizontal pour aligner le point avec le lien
+        const decal = 20;
         ctx.beginPath();
-        ctx.arc(40, 60, 28, 0, 2 * Math.PI);
+        ctx.arc(40, 60, 28, 0, 2 * Math.PI); // cercle centré
         ctx.fillStyle = isMe ? "#e22" : "#111";
         ctx.shadowColor = '#888';
         ctx.shadowBlur = 8;
         ctx.fill();
-        ctx.font = "bold 54px Menlo, monospace";
+        // --- PSEUDO: font size auto-fit ---
+        let fontSize = 54;
+        const label = isEditing ? editValue : (node.label || node.pseudo || node.id);
+        ctx.font = `bold ${fontSize}px Menlo, monospace`;
+        let textWidth = ctx.measureText(`/user/${label}`).width;
+        while (textWidth > 410 && fontSize > 24) { // 410px max for text, min font 24px
+            fontSize -= 2;
+            ctx.font = `bold ${fontSize}px Menlo, monospace`;
+            textWidth = ctx.measureText(`/user/${label}`).width;
+        }
         ctx.fillStyle = "#111";
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        const label = isEditing ? editValue : (node.label || node.pseudo || node.id);
         ctx.fillText(`/user/${label}`, 90, 64);
         // Caret clignotant noir UNIQUEMENT sur le node courant (toujours)
         if (isMe && caretVisible) {
-            const textWidth = ctx.measureText(`/user/${label}`).width;
+            const caretTextWidth = ctx.measureText(`/user/${label}`).width;
             ctx.fillStyle = '#111';
-            ctx.fillRect(90 + textWidth + 6, 35, 4, 58);
+            ctx.fillRect(90 + caretTextWidth + 6, 35, 4, 58);
         }
         // Affiche/édite les mots-clés sous le pseudo (grosse ligne)
         const keywords = node.keywords || [];
@@ -143,20 +158,26 @@ function FocusGraph({data, userIp}) {
         }
         const texture = new THREE.CanvasTexture(canvas);
         const material = new THREE.SpriteMaterial({map: texture});
+        material.transparent = true;
+        material.alphaTest = 0.05;
         const sprite = new THREE.Sprite(material);
         sprite.scale.set(22, 7, 1);
+        sprite.center.set(40/520, 0.60); // centre du cercle, vertical ajusté
         return sprite;
     }
 
     function handleNodeClick(node) {
-        if (node.id === myNodeId) {
+        if (node.ip === userIp) {
             setEditingId(node.id);
             setEditValue(node.label || node.pseudo || node.id);
-            setSelectedNode(null); // Pas de popup pour soi
+            setSelectedNode(null); // Masque le popup classique
             setKeywordEdit("");
+            setShowCustomize(true); // Affiche la fenêtre profil perso
         } else {
-            setSelectedNode(node); // Popup pour les autres
             setEditingId(null);
+            setSelectedNode(null);
+            setShowCustomize(false);
+            if (onUserNodeClick) onUserNodeClick(node);
         }
     }
 
@@ -246,37 +267,44 @@ function FocusGraph({data, userIp}) {
                     nodeAutoColorBy="group"
                     onNodeClick={handleNodeClick}
                     nodeThreeObject={nodeThreeObject}
+                    linkColor={() => '#111'}
+                    linkOpacity={0.95}
+                    linkWidth={0.1}
                     backgroundColor="rgba(0,0,0,0)"
                     width={dimensions.width}
                     height={dimensions.height}
                 />
             </div>
-            {/* Ajoute le popup d'édition sous le pseudo */}
+            {/* Popup classique pour les autres nodes uniquement */}
             {selectedNode && (
                 <div
                     className="profile-popup"
                     style={{
                         position: 'fixed',
-                        left: 16,
-                        bottom: 16,
+                        top: 30,
+                        left: 12,
                         width: 320,
+                        minWidth: 320,
+                        maxWidth: 320,
                         minHeight: 120,
                         background: 'rgba(255,255,255,0.98)',
-                        borderRadius: 12,
+                        borderRadius: 16,
                         boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
                         zIndex: 1001,
                         padding: '28px 24px',
                         fontFamily: 'Menlo, monospace',
-                        fontSize: 22,
+                        fontSize: 20,
                         color: '#111',
                         display: 'flex',
                         flexDirection: 'column',
                         alignItems: 'flex-start',
+                        boxSizing: 'border-box',
+                        gap: 0
                     }}
                 >
-                    <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 26 }}>/user/{selectedNode.label || selectedNode.pseudo || selectedNode.id}</div>
-                    <div style={{ marginBottom: 8, fontSize: 20 }}>
-                        <span style={{ fontWeight: 600, fontSize: 20, marginRight: 10 }}>mots-clés :</span>
+                    <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 24 }}>/user/{selectedNode.label || selectedNode.pseudo || selectedNode.id}</div>
+                    <div style={{ marginBottom: 30, fontSize: 18, width: '100%' }}>
+                        <span style={{ fontWeight: 600, fontSize: 18, marginRight: 10 }}>mots-clés :</span>
                         {getKeywords(selectedNode).map((kw, i) => (
                             <span key={i} style={{
                                 display: 'inline-block',
@@ -286,9 +314,10 @@ function FocusGraph({data, userIp}) {
                                 padding: '4px 16px',
                                 marginRight: i < getKeywords(selectedNode).length - 1 ? 2 : 10,
                                 marginBottom: 2,
-                                fontSize: 20,
+                                fontSize: 18,
                                 fontWeight: 600,
-                                cursor: selectedNode.id === myNodeId ? 'pointer' : 'default'
+                                cursor: selectedNode.id === myNodeId ? 'pointer' : 'default',
+                                boxSizing: 'border-box',
                             }}
                             onClick={selectedNode.id === myNodeId ? () => handleKeywordRemove(i) : undefined}
                             >{kw}{i < getKeywords(selectedNode).length - 1 ? ',' : ''}</span>
@@ -301,18 +330,151 @@ function FocusGraph({data, userIp}) {
                                     onKeyDown={e => { if (e.key === 'Enter') handleKeywordAdd(); }}
                                     style={{
                                         fontFamily: 'Menlo',
-                                        fontSize: 20,
+                                        fontSize: 18,
                                         border: 'none',
                                         outline: 'none',
                                         background: 'none',
                                         borderBottom: '2px solid #111',
                                         marginLeft: 8,
-                                        width: 90
+                                        width: 90,
+                                        boxSizing: 'border-box',
                                     }}
                                     maxLength={16}
                                     placeholder="+ keyword"
                                 />
                                 {caretVisible && <span style={{ borderLeft: '2.5px solid #111', height: 24, marginLeft: -2 }} />}
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
+            {/* Bouton rond noir (photo profil) en bas à droite, toujours visible si c'est moi */}
+            {myNodeId && (
+                <button
+                    onClick={() => setShowCustomize(v => !v)}
+                    style={{
+                        position: 'fixed',
+                        right: 24,
+                        bottom: 24,
+                        width: 54,
+                        height: 54,
+                        borderRadius: '50%',
+                        background: '#111',
+                        border: 'none',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
+                        zIndex: 1100,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        padding: 0
+                    }}
+                    title="Personnaliser mon point"
+                >
+                    {/* Smiley ou icône profil */}
+                    <span style={{ color: '#fff', fontSize: 20, fontFamily: 'Menlo' }}>😶‍🌫️</span>
+                </button>
+            )}
+            {/* Fenêtre profil perso, décalée à gauche du rond noir */}
+            {showCustomize && (
+                <div
+                    className="customize-popup"
+                    style={{
+                        position: 'fixed',
+                        right: 90,
+                        bottom: 32,
+                        width: 258,
+                        minHeight: 200,
+                        background: 'rgba(255,255,255,0.98)',
+                        borderRadius: 16,
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+                        zIndex: 1099,
+                        padding: '28px 24px',
+                        fontFamily: 'Menlo, monospace',
+                        fontSize: 10,
+                        color: '#111',
+                        //display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'flex-start',
+                        boxSizing: 'border-box',
+                        gap: 0
+                    }}
+                >
+                    {/* Ligne pseudo */}
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, width: '100%' }}>
+                        <span style={{ fontWeight: 700, fontSize: 20, marginRight: 8 }}>&gt; USER/</span>
+                        <input
+                            value={editValue}
+                            onChange={e => {
+                                setEditValue(e.target.value);
+                                if (editingId !== null) {
+                                    setGraphData(gd => ({
+                                        ...gd,
+                                        nodes: gd.nodes.map(n => n.id === editingId ? { ...n, label: e.target.value } : n)
+                                    }));
+                                }
+                            }}
+                            onKeyDown={e => { if (e.key === 'Enter') handleInputBlurOrEnter(); }}
+                            style={{
+                                fontFamily: 'Menlo',
+                                fontWeight: 600,
+                                fontSize: 20,
+                                border: 'none',
+                                outline: 'none',
+                                background: 'none',
+                                borderBottom: '2px solid #111',
+                                color: '#111',
+                                width: 110,
+                                marginRight: 2,
+                                padding: 0,
+                                lineHeight: 1.1,
+                                boxSizing: 'border-box',
+                            }}
+                            maxLength={24}
+                        />
+                        {caretVisible && <span style={{ borderLeft: '2px solid #111', height: 20, marginLeft: -2 }} />}
+                    </div>
+                    {/* Mots-clés avec caret, style sobre et compact */}
+                    <div style={{ width: '100%', marginBottom: 2, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0 }}>
+                        {getKeywords({ id: myNodeId, ...graphData.nodes.find(n => n.id === myNodeId) }).map((kw, i, arr) => (
+                            <span key={i} style={{
+                                color: '#888',
+                                fontSize: 16,
+                                fontWeight: 600,
+                                marginRight: i < arr.length - 1 ? 2 : 0,
+                                cursor: 'pointer',
+                                borderBottom: '1.5px solid #eee',
+                                marginBottom: 2,
+                                padding: '0 2px',
+                                boxSizing: 'border-box',
+                            }}
+                            onClick={() => handleKeywordRemove(i)}
+                            >{kw}{i < arr.length - 1 ? ',' : ''}</span>
+                        ))}
+                        {getKeywords({ id: myNodeId, ...graphData.nodes.find(n => n.id === myNodeId) }).length < 3 && (
+                            <>
+                                <input
+                                    value={keywordEdit}
+                                    onChange={e => setKeywordEdit(e.target.value)}
+                                    onKeyDown={e => { if (e.key === 'Enter') handleKeywordAdd(); }}
+                                    style={{
+                                        fontFamily: 'Menlo',
+                                        fontSize: 16,
+                                        border: 'none',
+                                        outline: 'none',
+                                        background: 'none',
+                                        borderBottom: '1.5px solid #bbb',
+                                        color: '#bbb',
+                                        width: 80,
+                                        marginLeft: 2,
+                                        padding: 0,
+                                        marginBottom: 2,
+                                        boxSizing: 'border-box',
+                                    }}
+                                    maxLength={16}
+                                    placeholder="+ mot-clé"
+                                />
+                                {caretVisible && <span style={{ borderLeft: '1.5px solid #bbb', height: 14, marginLeft: -2 }} />}
                             </>
                         )}
                     </div>

@@ -1,19 +1,11 @@
 import React from 'react';
 
-export default function SidePanel({ users, me, onlineUsers }) {
+export default function SidePanel({ onClose }) {
   return (
     <div style={{
-      position: 'fixed',
-      top: 24,
-      right: 24,
-      display: 'flex',
-      flexDirection: 'column',
-      gap: 18,
-      zIndex: 2000,
       maxWidth: 340,
       minWidth: 260
     }}>
-      {/* Boîte de bienvenue/explications */}
       <div style={{
         background: 'rgba(255,255,255,0.98)',
         borderRadius: 18,
@@ -23,8 +15,10 @@ export default function SidePanel({ users, me, onlineUsers }) {
         fontSize: 16,
         color: '#111',
         lineHeight: 1.5,
-        marginBottom: 0
+        marginBottom: 0,
+        position: 'relative'
       }}>
+        <button onClick={onClose} style={{position:'absolute',top:8,right:10,fontSize:18,background:'none',border:'none',cursor:'pointer',color:'#888'}}>×</button>
         <b style={{fontSize:18}}>&gt; Bienvenue sur line's line.</b>
         <div style={{marginTop:8, marginBottom:10}}>
           Une experimentation numérique,<br/>
@@ -48,35 +42,6 @@ export default function SidePanel({ users, me, onlineUsers }) {
           Vous vous reconnaîtrez entre vous grâce à vos mots-clés.
         </div>
       </div>
-      {/* Liste des users (exemple, à adapter selon besoins) */}
-      {users && users.length > 0 && users.map(user => {
-        // Sécurise keywords : toujours un tableau
-        let keywordsArr = [];
-        if (Array.isArray(user.keywords)) {
-          keywordsArr = user.keywords;
-        } else if (typeof user.keywords === 'string' && user.keywords.length > 0) {
-          keywordsArr = user.keywords.split(',').map(k => k.trim()).filter(Boolean);
-        }
-        return (
-          <div key={user.id} style={{
-            background: 'rgba(255,255,255,0.98)',
-            borderRadius: 14,
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            padding: '14px 16px 12px 16px',
-            fontFamily: 'Menlo, monospace',
-            fontSize: 15,
-            color: '#111',
-            marginBottom: 0,
-            marginTop: 0
-          }}>
-            <b style={{fontSize:15}}>&gt; USER/{user.id}</b>
-            <div style={{margin:'6px 0 8px 0'}}>
-              {keywordsArr.length > 0 ? keywordsArr.join(', ') : <span style={{color:'#bbb'}}>Aucun mot-clé</span>}
-            </div>
-            {/* Actions à adapter selon logique (lier/délier, etc.) */}
-          </div>
-        );
-      })}
     </div>
   );
 }

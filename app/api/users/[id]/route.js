@@ -5,24 +5,37 @@ export async function PATCH(request, context) {
   const params = await context.params;
   const id = typeof params === 'object' && 'id' in params ? params.id : params;
 
+  let updated = false;
   if (body.pseudo !== undefined) {
     await turso.execute({
       sql: 'UPDATE users SET pseudo = ? WHERE id = ?',
       args: [body.pseudo, id],
     });
-  } else if (body.keywords !== undefined) {
-    // On stocke les mots-clés comme une chaîne séparée par des virgules
+    updated = true;
+  }
+  if (body.keywords !== undefined) {
     const keywordsStr = Array.isArray(body.keywords) ? body.keywords.join(',') : '';
     await turso.execute({
       sql: 'UPDATE users SET keywords = ? WHERE id = ?',
       args: [keywordsStr, id],
     });
-  } else if (body.last_seen !== undefined) {
+    updated = true;
+  }
+  if (body.last_seen !== undefined) {
     await turso.execute({
       sql: 'UPDATE users SET last_seen = ? WHERE id = ?',
       args: [body.last_seen, id],
     });
-  } else {
+    updated = true;
+  }
+  if (body.starter !== undefined) {
+    await turso.execute({
+      sql: 'UPDATE users SET starter = ? WHERE id = ?',
+      args: [body.starter, id],
+    });
+    updated = true;
+  }
+  if (!updated) {
     return new Response(JSON.stringify({ error: 'Aucune donnée à mettre à jour.' }), { status: 400 });
   }
 
