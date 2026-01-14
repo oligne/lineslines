@@ -5,7 +5,7 @@ import ForceGraph3D, { ForceGraphMethods } from "react-force-graph-3d";
 import * as THREE from "three";
 
 function FocusGraph({data, userIp}) {
-    const fgRef = useRef<ForceGraphMethods>();
+    const fgRef = useRef<ForceGraphMethods>(null);
     const [graphData, setGraphData] = useState({nodes: [], links: []});
     const [editingId, setEditingId] = useState(null);
     const [editValue, setEditValue] = useState("");
