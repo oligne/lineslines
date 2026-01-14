@@ -1,0 +1,106 @@
+@font-face {
+  font-family: 'Menlo';
+  src: url('/assets/font/Menlo-Regular.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'ComputerPixel';
+  src: url('/assets/font/computer_pixel-7.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+/* Styles globaux */
+
+body {
+  margin: 0;
+  font-family: 'Menlo', monospace;
+  background: #fff;
+  color: #000;
+}
+
+main {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+h1, h2, h3, .menu, .title {
+  font-family: 'ComputerPixel', monospace;
+  letter-spacing: 0.05em;
+  color: #000;
+}
+
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 2rem;
+}
+
+button {
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0.5rem 1.5rem;
+  font-family: 'ComputerPixel', monospace;
+  font-size: 1rem;
+  cursor: pointer;
+  color: #000;
+}
+button:hover {
+  background: #f2f2f2;
+}
+
+.flex-wrap {
+  gap: 2.5rem;
+}
+
+input {
+  font-family: 'Menlo', monospace;
+  font-size: 1rem;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid #000;
+  color: #000;
+  outline: none;
+  padding: 0.1rem 0.2rem;
+}
+input:focus {
+  border-color: #000;
+}
+
+.animate-blink {
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.w-4.h-4.rounded-full.bg-black,
+.w-4.h-4.rounded-full.user-offline {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+}
+.w-4.h-4.rounded-full.bg-black {
+  background: #000;
+  border: 2px solid #000;
+}
+.w-4.h-4.rounded-full.user-offline {
+  background: #fff;
+  border: 6px solid #000;
+}
+
+.absolute {
+  font-size: 1.1rem;
+  font-family: 'Menlo', monospace;
+  color: #000;
+  text-shadow: none;
+}
