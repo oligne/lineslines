@@ -2,9 +2,7 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import { getUserPositions } from '../lib/forceGraph';
-import dynamic from 'next/dynamic';
-
-const ForceGraph3DView = dynamic(() => import('../lib/ForceGraph3DView'), { ssr: false });
+import FocusGraph from './components/FocusGraphWrapper';
 
 export default function Home() {
   const [users, setUsers] = useState([]);
@@ -77,6 +75,11 @@ export default function Home() {
 
   const positions = getUserPositions(users);
 
+  // Construction du graph pour FocusGraph
+  const nodes = users.map(u => ({ id: u.id, group: 1, label: u.pseudo }));
+  const links = []; // aucun lien
+  const graphData = JSON.stringify({ nodes, links });
+
   return (
     <main>
       {error && (
@@ -87,7 +90,9 @@ export default function Home() {
         <button className="menu" style={{ position: 'absolute', right: 32, fontSize: 18 }} onClick={refresh}>refresh ↻</button>
       </div>
       {/* Affichage 3D Force Graph (client only) */}
-      <ForceGraph3DView users={users} me={me} onlineUsers={onlineUsers} />
+      <div style={{ width: '100vw', height: '70vh', minHeight: 400 }}>
+        <FocusGraph data={graphData} />
+      </div>
       {/* Ancien affichage 2D en commentaire pour test */}
       {/*
       <div style={{ position: 'relative', width: '100vw', height: '70vh', minHeight: 400 }}>
@@ -203,7 +208,7 @@ export default function Home() {
       </div>
       */}
       {/* Liste des users en bas à gauche */}
-      <div style={{
+      {/* <div style={{
         position: 'fixed',
         left: 16,
         bottom: 16,
@@ -224,7 +229,7 @@ export default function Home() {
             /user/{user.pseudo}
           </div>
         ))}
-      </div>
+      </div> */}
     </main>
   );
 }

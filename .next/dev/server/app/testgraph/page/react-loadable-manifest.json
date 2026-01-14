@@ -1,0 +1,24 @@
+{
+  "[project]/app/components/FocusGraph.tsx [app-client] (ecmascript, next/dynamic entry)": {
+    "id": "[project]/app/components/FocusGraph.tsx [app-client] (ecmascript, next/dynamic entry)",
+    "files": [
+      "static/chunks/node_modules_three_build_three_core_996ef05a.js",
+      "static/chunks/node_modules_three_build_three_module_0c59ee63.js",
+      "static/chunks/node_modules_three_build_three_webgpu_0b895824.js",
+      "static/chunks/node_modules_three_examples_jsm_f08cfaa7._.js",
+      "static/chunks/node_modules_polished_dist_polished_esm_714c8fb0.js",
+      "static/chunks/node_modules_a76b4ce1._.js",
+      "static/chunks/app_components_FocusGraph_tsx_4af8fcd6._.js",
+      "static/chunks/app_components_FocusGraph_tsx_c237c955._.js"
+    ]
+  },
+  "[project]/lib/ForceGraph3DView.js [app-client] (ecmascript, next/dynamic entry)": {
+    "id": "[project]/lib/ForceGraph3DView.js [app-client] (ecmascript, next/dynamic entry)",
+    "files": [
+      "static/chunks/node_modules_3d-force-graph_dist_3d-force-graph_mjs_edd83ccf._.js",
+      "static/chunks/node_modules_three_build_three_core_996ef05a.js",
+      "static/chunks/lib_ForceGraph3DView_ae7225c7.js",
+      "static/chunks/lib_ForceGraph3DView_c237c955.js"
+    ]
+  }
+}
