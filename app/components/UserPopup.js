@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
+import lieIcon from '../assets/icons/lie.png';
+import delieIcon from '../assets/icons/delie.png';
 
-export default function UserPopup({ user, me, onClose, small, showPseudo, onCreateRelation, isLinked }) {
+export default function UserPopup({ user, me, onClose, small, showPseudo, onCreateRelation, onDeleteRelation, isLinked }) {
   let keywordsArr = [];
   if (Array.isArray(user.keywords)) {
     keywordsArr = user.keywords;
@@ -55,7 +57,8 @@ export default function UserPopup({ user, me, onClose, small, showPseudo, onCrea
       maxWidth: 320,
       fontFamily: 'Menlo, monospace',
       fontSize: small ? 16 : 20,
-      marginBottom: 0,
+      marginBottom: -20,
+      marginTop: 20,
       pointerEvents: 'auto',
       zIndex: 1,
       boxSizing: 'border-box',
@@ -89,7 +92,7 @@ export default function UserPopup({ user, me, onClose, small, showPseudo, onCrea
                 background: 'none',
                 borderBottom: '2px solid #111',
                 marginLeft: 6,
-                width: 60
+                width: 180
               }}
               maxLength={16}
               placeholder="+ keyword"
@@ -99,23 +102,64 @@ export default function UserPopup({ user, me, onClose, small, showPseudo, onCrea
           </>
         )}
       </div>
-      {/* Bouton lier (à adapter selon logique de liens) */}
+      {/* Bouton lier/délier (icônes personnalisées) */}
       {onCreateRelation && !isLinked && me?.id !== user.id && (
-        <button onClick={onCreateRelation} style={{
-          marginTop: 10,
-          fontSize: 15,
-          background: '#e22',
-          color: '#fff',
+        <button onClick={() => { console.log('LIAISON', me?.id, user.id); onCreateRelation(); }} style={{
+          marginTop: 16,
+          background: '#fff',
           border: 'none',
-          borderRadius: 8,
-          padding: '6px 18px',
+          borderRadius: 10,
+          padding: '7px 7px 7px 18px',
+          minWidth: 180,
+          height: 48,
+          width: '100%',
           cursor: 'pointer',
           fontFamily: 'Menlo',
-          fontWeight: 700
-        }}>lier nos points</button>
+          fontWeight: 700,
+          fontSize: 18,
+          color: '#111',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+          transition: 'background 0.15s, color 0.15s',
+          whiteSpace: 'nowrap',
+        }}
+        onMouseOver={e => { e.currentTarget.style.background = '#eee'; }}
+        onMouseOut={e => { e.currentTarget.style.background = '#fff'; }}
+        >
+          <img src={lieIcon.src} alt="lier" style={{ width: 47, height: 22, marginRight: 10 }} />
+          lier nos points
+        </button>
       )}
       {isLinked && me?.id !== user.id && (
-        <div style={{marginTop: 10, color: '#0a0', fontWeight: 700, fontSize: 15}}>déjà liés</div>
+        <button onClick={() => { console.log('DELIER', me?.id, user.id); onDeleteRelation && onDeleteRelation(user.id); }} style={{
+          marginTop: 16,
+          background: '#fff',
+          border: 'none',
+          borderRadius: 10,
+          padding: '7px 7px 7px 18px',
+          minWidth: 180,
+          height: 48,
+          width: '100%',
+          cursor: 'pointer',
+          fontFamily: 'Menlo',
+          fontWeight: 700,
+          fontSize: 18,
+          color: '#111',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 10,
+          boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+          transition: 'background 0.15s, color 0.15s',
+          whiteSpace: 'nowrap',
+        }}
+        onMouseOver={e => { e.currentTarget.style.background = '#eee'; }}
+        onMouseOut={e => { e.currentTarget.style.background = '#fff'; }}
+        >
+          <img src={delieIcon.src} alt="délier" style={{ width: 47, height: 22, marginRight: 10 }} />
+          délier
+        </button>
       )}
     </div>
   );

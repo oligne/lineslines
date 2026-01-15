@@ -106,6 +106,21 @@ export default function Home() {
       .then(setRelations);
   }
 
+  // Fonction pour délier (supprimer la relation dans le sens me->u)
+  async function deleteRelation(user1_id, user2_id) {
+    if (!user1_id || !user2_id || user1_id === user2_id) return;
+    console.log('API PATCH /api/relations', { user1_id, user2_id, action: 'delete' });
+    await fetch('/api/relations', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user1_id, user2_id, action: 'delete' })
+    });
+    // Refresh relations après suppression
+    fetch('/api/relations')
+      .then(res => res.json())
+      .then(setRelations);
+  }
+
   const positions = getUserPositions(users);
 
   // Construction du graph pour FocusGraph
@@ -171,6 +186,7 @@ export default function Home() {
           <div key={u.id} style={{pointerEvents: 'auto'}}>
             <UserPopup user={u} me={me} onClose={() => setUserPopups(prev => prev.filter(p => p.id !== u.id))} small showPseudo
               onCreateRelation={() => createRelation(me?.id, u.id)}
+              onDeleteRelation={id => deleteRelation(me?.id, id)}
               isLinked={!!relations.find(r => (r.user1_id === me?.id && r.user2_id === u.id) || (r.user2_id === me?.id && r.user1_id === u.id))}
             />
           </div>

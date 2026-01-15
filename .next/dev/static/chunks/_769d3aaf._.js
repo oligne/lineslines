@@ -468,34 +468,97 @@ function UserPopup({ user, me, onClose, small, showPseudo, onCreateRelation, isL
             onCreateRelation && !isLinked && me?.id !== user.id && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
                 onClick: onCreateRelation,
                 style: {
-                    marginTop: 10,
-                    fontSize: 15,
-                    background: '#e22',
-                    color: '#fff',
+                    marginTop: 12,
+                    background: '#fff',
                     border: 'none',
-                    borderRadius: 8,
-                    padding: '6px 18px',
+                    borderRadius: 10,
+                    padding: '7px 18px 7px 14px',
                     cursor: 'pointer',
                     fontFamily: 'Menlo',
-                    fontWeight: 700
+                    fontWeight: 700,
+                    fontSize: 16,
+                    color: '#e22',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    boxShadow: '0 2px 8px rgba(226,34,34,0.07)',
+                    transition: 'background 0.15s, color 0.15s'
                 },
-                children: "lier nos points"
-            }, void 0, false, {
+                onMouseOver: (e)=>{
+                    e.currentTarget.style.background = '#e22';
+                    e.currentTarget.style.color = '#fff';
+                },
+                onMouseOut: (e)=>{
+                    e.currentTarget.style.background = '#fff';
+                    e.currentTarget.style.color = '#e22';
+                },
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                        src: "/app/assets/icons/lie.png",
+                        alt: "lier",
+                        style: {
+                            width: 22,
+                            height: 22,
+                            marginRight: 6,
+                            filter: 'drop-shadow(0 1px 1px #e22a)'
+                        }
+                    }, void 0, false, {
+                        fileName: "[project]/app/components/UserPopup.js",
+                        lineNumber: 124,
+                        columnNumber: 11
+                    }, this),
+                    "lier nos points"
+                ]
+            }, void 0, true, {
                 fileName: "[project]/app/components/UserPopup.js",
                 lineNumber: 104,
                 columnNumber: 9
             }, this),
-            isLinked && me?.id !== user.id && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
+            isLinked && me?.id !== user.id && /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
+                onClick: onCreateRelation,
                 style: {
-                    marginTop: 10,
-                    color: '#0a0',
+                    marginTop: 12,
+                    background: '#fff',
+                    border: 'none',
+                    borderRadius: 10,
+                    padding: '7px 18px 7px 14px',
+                    cursor: 'pointer',
+                    fontFamily: 'Menlo',
                     fontWeight: 700,
-                    fontSize: 15
+                    fontSize: 16,
+                    color: '#888',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    boxShadow: '0 2px 8px rgba(100,100,100,0.07)',
+                    transition: 'background 0.15s, color 0.15s'
                 },
-                children: "déjà liés"
-            }, void 0, false, {
+                onMouseOver: (e)=>{
+                    e.currentTarget.style.background = '#eee';
+                },
+                onMouseOut: (e)=>{
+                    e.currentTarget.style.background = '#fff';
+                },
+                children: [
+                    /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("img", {
+                        src: "/app/assets/icons/delie.png",
+                        alt: "délier",
+                        style: {
+                            width: 22,
+                            height: 22,
+                            marginRight: 6,
+                            filter: 'drop-shadow(0 1px 1px #aaa)'
+                        }
+                    }, void 0, false, {
+                        fileName: "[project]/app/components/UserPopup.js",
+                        lineNumber: 149,
+                        columnNumber: 11
+                    }, this),
+                    "délier"
+                ]
+            }, void 0, true, {
                 fileName: "[project]/app/components/UserPopup.js",
-                lineNumber: 118,
+                lineNumber: 129,
                 columnNumber: 9
             }, this)
         ]

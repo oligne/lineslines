@@ -28,3 +28,22 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: e.message }), { status: 500 });
   }
 }
+
+// PATCH: supprime une relation entre deux users (action: 'delete')
+export async function PATCH(request) {
+  const { user1_id, user2_id, action } = await request.json();
+  if (action !== 'delete' || !user1_id || !user2_id || user1_id === user2_id) {
+    return new Response(JSON.stringify({ error: 'action "delete" et user1_id/user2_id requis.' }), { status: 400 });
+  }
+  // Toujours stocker dans l'ordre croissant pour unicité
+  const [a, b] = user1_id < user2_id ? [user1_id, user2_id] : [user2_id, user1_id];
+  try {
+    await turso.execute({
+      sql: 'DELETE FROM relations WHERE user1_id = ? AND user2_id = ?',
+      args: [a, b],
+    });
+    return new Response(JSON.stringify({ success: true }), { status: 200 });
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message }), { status: 500 });
+  }
+}

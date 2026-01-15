@@ -1,8 +1,26 @@
 "use client"
 
-import {useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 import ForceGraph3D, { ForceGraphMethods } from "react-force-graph-3d";
 import * as THREE from "three";
+import personaliserIcon from '../assets/icons/personaliser.png';
+import eye1 from '../assets/face/eyes/eye1.png';
+import eye2 from '../assets/face/eyes/eye2.png';
+import eye3 from '../assets/face/eyes/eye3.png';
+import eye4 from '../assets/face/eyes/eye4.png';
+import eye5 from '../assets/face/eyes/eye5.png';
+import mouth1 from '../assets/face/mouse/mouse1.png';
+import mouth2 from '../assets/face/mouse/mouse2.png';
+import mouth3 from '../assets/face/mouse/mouse3.png';
+import mouth4 from '../assets/face/mouse/mouse4.png';
+import mouth5 from '../assets/face/mouse/mouse5.png';
+// Ajoute une image "pas d'œil" et "pas de bouche" (index 0 = rien)
+import eyeNone from '../assets/face/eyes/none.png';
+import mouthNone from '../assets/face/mouse/none.png';
+
+// Chargement dynamique compatible Next.js/TypeScript
+const eyesImages = [eyeNone, eye1, eye2, eye3, eye4, eye5];
+const mouthImages = [mouthNone, mouth1, mouth2, mouth3, mouth4, mouth5];
 
 function FocusGraph({data, userIp, onUserNodeClick}) {
     const fgRef = useRef<ForceGraphMethods>(null);
@@ -16,6 +34,14 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
     const [keywordEdit, setKeywordEdit] = useState("");
     // Fenêtre de personnalisation en bas à droite pour son propre point
     const [showCustomize, setShowCustomize] = useState(false);
+    // Supprime l'état showMiniCustomize et la palette
+    // Ajoute l'état pour la personnalisation
+    const [custom, setCustom] = useState({ eye: 0, mouth: 0, eye_x: 0, eye_y: 0, mouth_x: 0, mouth_y: 0, eye_scale: 1, mouth_scale: 1 });
+    const [customDraft, setCustomDraft] = useState({ eye: 0, mouth: 0, eye_x: 0, eye_y: 0, mouth_x: 0, mouth_y: 0, eye_scale: 1, mouth_scale: 1 });
+    const [showMiniCustomize, setShowMiniCustomize] = useState(false);
+    // Ajoute l'état pour la sélection de la partie à déplacer
+    const [selectedPart, setSelectedPart] = useState('eye');
+    const [faceSize, setFaceSize] = useState(120); // taille du visage (min 60, max 120)
 
     // Resize listener pour canvas plein écran
     useEffect(() => {
@@ -78,39 +104,97 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
     // Fermer le profil si on clique dans le vide
     useEffect(() => {
         function handleClick(e) {
-            // Si le clic n'est pas dans le profil ni sur un node
-            if (!e.target.closest('.profile-popup')) setSelectedNode(null);
+            // Ne ferme le profil que si clic hors .profile-popup ET hors .mini-customize-popup ET hors .customize-arrow-btn (flèches et labels)
+            if (
+                !e.target.closest('.profile-popup') &&
+                !e.target.closest('.mini-customize-popup') &&
+                !e.target.closest('.customize-arrow-btn')
+            ) {
+                setSelectedNode(null);
+                setShowCustomize(false);
+                setShowMiniCustomize(false);
+            }
         }
         window.addEventListener('mousedown', handleClick);
         return () => window.removeEventListener('mousedown', handleClick);
     }, []);
 
+    // Charge la personnalisation au montage ou changement de myNodeId
+    useEffect(() => {
+        if (!myNodeId) return;
+        fetch(`/api/customizations?user_id=${myNodeId}`)
+            .then(r => r.json())
+            .then(data => {
+                const c = {
+                    eye: data.eye || 0,
+                    mouth: data.mouth || 0,
+                    eye_x: data.eye_x || 0,
+                    eye_y: data.eye_y || 0,
+                    mouth_x: data.mouth_x || 0,
+                    mouth_y: data.mouth_y || 0,
+                    eye_scale: data.eye_scale || 1,
+                    mouth_scale: data.mouth_scale || 1
+                };
+                setCustom(c);
+                setCustomDraft(c);
+            });
+    }, [myNodeId]);
+
     // Custom node: point + nom gros + caret clignotant noir UNIQUEMENT sur le node courant (toujours, même hors édition)
     function nodeThreeObject(node) {
+        // Récupère les données de customisation du node
+        const eye = node.eye ?? 0;
+        const mouth = node.mouth ?? 0;
+        const eye_x = node.eye_x ?? 0;
+        const eye_y = node.eye_y ?? 0;
+        const mouth_x = node.mouth_x ?? 0;
+        const mouth_y = node.mouth_y ?? 0;
+        const eye_scale = node.eye_scale ?? 1;
+        const mouth_scale = node.mouth_scale ?? 1;
         const isMe = node.id === myNodeId;
         const isEditing = editingId === node.id;
+        // Canvas élargi pour le visage + pseudo
         const canvas = document.createElement("canvas");
-        canvas.width = 520;
+        canvas.width = 700;
         canvas.height = 160;
         const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // Fond transparent (pas de fillRect blanc)
-        // ctx.fillStyle = "rgba(255,255,255,1)"; // supprimé
-        // ctx.fillRect(0, 0, canvas.width, canvas.height); // supprimé
-        // Décalage horizontal pour aligner le point avec le lien
-        const decal = 20;
+        // Dessine le visage personnalisé du node
+        // --- Cercle de fond ---
+        ctx.save();
         ctx.beginPath();
-        ctx.arc(40, 60, 28, 0, 2 * Math.PI); // cercle centré
+        ctx.arc(40, 60, 28, 0, 2 * Math.PI);
         ctx.fillStyle = isMe ? "#e22" : "#111";
         ctx.shadowColor = '#888';
         ctx.shadowBlur = 8;
         ctx.fill();
+        ctx.restore();
+        // --- Yeux ---
+        const eyeIdx = typeof eye === 'number' && eye > 0 && eye < eyesImages.length ? eye : 0;
+        const eyeX = typeof eye_x === 'number' ? eye_x : 0;
+        const eyeY = typeof eye_y === 'number' ? eye_y : 0;
+        const eyeScale = typeof eye_scale === 'number' ? eye_scale : 1;
+        if (eyeIdx !== 0 && eyesImages[eyeIdx]?.src) {
+            const img = new window.Image();
+            img.src = eyesImages[eyeIdx].src;
+            ctx.drawImage(img, 40 - 28 + 28 * 0.3 + eyeX, 60 - 28 + 28 * 0.37 + eyeY, 28 * 0.4 * eyeScale, 28 * 0.18 * eyeScale);
+        }
+        // --- Bouche ---
+        const mouthIdx = typeof mouth === 'number' && mouth > 0 && mouth < mouthImages.length ? mouth : 0;
+        const mouthX = typeof mouth_x === 'number' ? mouth_x : 0;
+        const mouthY = typeof mouth_y === 'number' ? mouth_y : 0;
+        const mouthScale = typeof mouth_scale === 'number' ? mouth_scale : 1;
+        if (mouthIdx !== 0 && mouthImages[mouthIdx]?.src) {
+            const img = new window.Image();
+            img.src = mouthImages[mouthIdx].src;
+            ctx.drawImage(img, 40 - 28 + 28 * 0.3 + mouthX, 60 - 28 + 28 * 0.67 + mouthY, 28 * 0.4 * mouthScale, 28 * 0.18 * mouthScale);
+        }
         // --- PSEUDO: font size auto-fit ---
         let fontSize = 54;
         const label = isEditing ? editValue : (node.label || node.pseudo || node.id);
         ctx.font = `bold ${fontSize}px Menlo, monospace`;
         let textWidth = ctx.measureText(`/user/${label}`).width;
-        while (textWidth > 410 && fontSize > 24) { // 410px max for text, min font 24px
+        while (textWidth > 590 && fontSize > 24) {
             fontSize -= 2;
             ctx.font = `bold ${fontSize}px Menlo, monospace`;
             textWidth = ctx.measureText(`/user/${label}`).width;
@@ -129,51 +213,20 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
         const keywords = node.keywords || [];
         ctx.font = "32px Menlo, monospace";
         let x = 90;
-        let y = 120;
-        const maxKeywordsWidth = 410;
-        // Affichage des mots-clés séparés par des virgules, retour à la ligne si trop long
+        const y = 120;
         keywords.forEach((kw, i) => {
             const kwText = `#${kw}${i < keywords.length - 1 ? ',' : ''}`;
-            const kwWidth = ctx.measureText(kwText).width;
-            if (x + kwWidth > 90 + maxKeywordsWidth) {
-                x = 90;
-                y += 36; // saute une ligne
-            }
             ctx.fillStyle = isMe ? "#e22" : "#444";
             ctx.fillText(kwText, x, y);
-            // Croix de suppression si c'est moi (affichage visuel seulement)
-            if (isMe) {
-                ctx.save();
-                ctx.strokeStyle = "#e22";
-                ctx.lineWidth = 3;
-                const crossX = x + kwWidth + 18;
-                const crossY = y - 12;
-                ctx.beginPath();
-                ctx.moveTo(crossX, crossY);
-                ctx.lineTo(crossX + 16, crossY + 24);
-                ctx.moveTo(crossX + 16, crossY);
-                ctx.lineTo(crossX, crossY + 24);
-                ctx.stroke();
-                ctx.restore();
-            }
-            x += kwWidth + (isMe ? 50 : 36);
+            x += ctx.measureText(kwText).width + (isMe ? 50 : 36);
         });
-        // Champ d'ajout si c'est moi et <3 keywords (affichage visuel seulement)
-        if (isMe && keywords.length < 3) {
-            if (x + ctx.measureText("+ mot-clé").width > 90 + maxKeywordsWidth) {
-                x = 90;
-                y += 36;
-            }
-            ctx.fillStyle = "#aaa";
-            ctx.fillText("+ mot-clé", x, y);
-        }
         const texture = new THREE.CanvasTexture(canvas);
         const material = new THREE.SpriteMaterial({map: texture});
         material.transparent = true;
         material.alphaTest = 0.05;
         const sprite = new THREE.Sprite(material);
-        sprite.scale.set(22, 7, 1);
-        sprite.center.set(40/520, 0.60); // centre du cercle, vertical ajusté
+        sprite.scale.set(30, 7, 1);
+        sprite.center.set(40/700, 0.60);
         return sprite;
     }
 
@@ -181,13 +234,14 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
         if (node.ip === userIp) {
             setEditingId(node.id);
             setEditValue(node.label || node.pseudo || node.id);
-            setSelectedNode(null); // Masque le popup classique
             setKeywordEdit("");
             setShowCustomize(true); // Affiche la fenêtre profil perso
+            // setSelectedNode(null); // NE PAS fermer la popup profil perso
         } else {
             setEditingId(null);
-            setSelectedNode(null);
-            setShowCustomize(false);
+            setSelectedNode(node); // Affiche la popup de l'autre user
+            // NE PAS fermer la fenêtre profil perso !
+            // setShowCustomize(false); // <-- supprimé pour garder la fenêtre profil ouverte
             if (onUserNodeClick) onUserNodeClick(node);
         }
     }
@@ -207,20 +261,21 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
 
     async function handleInputBlurOrEnter() {
         if (editingId !== null) {
-            // Save to API
             try {
                 await fetch(`/api/users/${editingId}`, {
                     method: 'PATCH',
                     body: JSON.stringify({ pseudo: editValue }),
                     headers: { 'Content-Type': 'application/json' },
                 });
-            } catch (e) {
-                // Optionally handle error
-            }
+            } catch (e) {}
             setGraphData(gd => ({
                 ...gd,
                 nodes: gd.nodes.map(n => n.id === editingId ? {...n, label: editValue} : n)
             }));
+            // --- Correction: synchronise selectedNode si c'est moi ---
+            if (editingId === myNodeId) {
+                setSelectedNode(prev => prev ? { ...prev, label: editValue } : prev);
+            }
             setEditingId(null);
         }
     }
@@ -276,6 +331,7 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
     function handleKeywordAddCustom() {
         const meNode = graphData.nodes.find(n => n.id === myNodeId);
         if (!keywordEdit.trim() || !meNode) return;
+        setEditingId(null);
         const newKeywords = [...(getKeywords(meNode)), keywordEdit.trim()].slice(0, 3);
         fetch(`/api/users/${myNodeId}`, {
             method: 'PATCH',
@@ -286,6 +342,7 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                 ...gd,
                 nodes: gd.nodes.map(n => n.id === myNodeId ? { ...n, keywords: newKeywords } : n)
             }));
+            setSelectedNode(prev => prev && prev.id === myNodeId ? { ...prev, keywords: newKeywords } : prev);
             setKeywordEdit("");
         });
     }
@@ -302,7 +359,128 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                 ...gd,
                 nodes: gd.nodes.map(n => n.id === myNodeId ? { ...n, keywords: newKeywords } : n)
             }));
+            setSelectedNode(prev => prev && prev.id === myNodeId ? { ...prev, keywords: newKeywords } : prev);
         });
+    }
+
+    // Ouvre la fenêtre de personnalisation depuis le profil
+    function openCustomize() {
+        // Recharge à chaque ouverture pour garantir la synchro avec Turso
+        fetch(`/api/customizations?user_id=${myNodeId}`)
+            .then(r => r.json())
+            .then(data => {
+                const c = {
+                    eye: data.eye || 0,
+                    mouth: data.mouth || 0,
+                    eye_x: data.eye_x || 0,
+                    eye_y: data.eye_y || 0,
+                    mouth_x: data.mouth_x || 0,
+                    mouth_y: data.mouth_y || 0,
+                    eye_scale: data.eye_scale || 1,
+                    mouth_scale: data.mouth_scale || 1
+                };
+                setCustom(c);
+                setCustomDraft(c);
+                setShowMiniCustomize(true);
+            });
+    }
+    // Ferme sans enregistrer
+    function closeCustomize() {
+        setShowMiniCustomize(false);
+    }
+    // Enregistre la personnalisation
+    function saveCustomize() {
+        // Force les valeurs x/y à être des entiers
+        setCustom(customDraft); // met à jour l'état principal
+        const payload = {
+            user_id: String(Math.round(myNodeId)),
+            eye: customDraft.eye ?? 0,
+            eye_x: Math.round(customDraft.eye_x ?? 0),
+            eye_y: Math.round(customDraft.eye_y ?? 0),
+            eye_scale: customDraft.eye_scale ?? 1, // bien envoyer la nouvelle scale
+            mouth: customDraft.mouth ?? 0,
+            mouth_x: Math.round(customDraft.mouth_x ?? 0),
+            mouth_y: Math.round(customDraft.mouth_y ?? 0),
+            mouth_scale: customDraft.mouth_scale ?? 1 // bien envoyer la nouvelle scale
+        };
+        fetch('/api/customizations', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        })
+        .then(async r => {
+            await r.text();
+            fetch(`/api/customizations?user_id=${myNodeId}`)
+                .then(r => r.json())
+                .then(data => {
+                    const c = {
+                        eye: data.eye ?? customDraft.eye,
+                        mouth: data.mouth ?? customDraft.mouth,
+                        eye_x: data.eye_x ?? customDraft.eye_x,
+                        eye_y: data.eye_y ?? customDraft.eye_y,
+                        mouth_x: data.mouth_x ?? customDraft.mouth_x,
+                        mouth_y: data.mouth_y ?? customDraft.mouth_y,
+                        eye_scale: data.eye_scale ?? customDraft.eye_scale, // priorité à la valeur reçue
+                        mouth_scale: data.mouth_scale ?? customDraft.mouth_scale // priorité à la valeur reçue
+                    };
+                    setCustom(c); // met à jour le cercle en bas à droite
+                    setCustomDraft(c); // met à jour la fenêtre de personnalisation
+                });
+        });
+    }
+
+    // Déplacement limité dans le cercle (max rayon 24px)
+    function movePart(part, dx, dy) {
+        setCustomDraft(prev => {
+            let x = (prev[part + '_x'] || 0) + dx;
+            let y = (prev[part + '_y'] || 0) + dy;
+            // Limite au cercle de rayon 24px
+            const r = Math.sqrt(x*x + y*y);
+            if (r > 24) {
+                x = (x / r) * 24;
+                y = (y / r) * 24;
+            }
+            return { ...prev, [part + '_x']: x, [part + '_y']: y };
+        });
+    }
+
+    // Change l’esthétique localement (draft)
+    function handleChangeCustom(type, dir) {
+        setCustomDraft(prev => {
+            let max = type === 'eye' ? eyesImages.length : mouthImages.length;
+            let next = ((prev[type] || 0) + dir + max) % max;
+            return { ...prev, [type]: next };
+        });
+    }
+
+    // Composant visage personnalisé
+    function CustomFace({ eye, mouth, eye_x, eye_y, mouth_x, mouth_y, eye_scale, mouth_scale, size = 120 }) {
+        // Sécurise les index et les valeurs
+        const eyeIdx = typeof eye === 'number' && eye > 0 && eye < eyesImages.length ? eye : 0;
+        const mouthIdx = typeof mouth === 'number' && mouth > 0 && mouth < mouthImages.length ? mouth : 0;
+        const eyeX = typeof eye_x === 'number' ? eye_x : 0;
+        const eyeY = typeof eye_y === 'number' ? eye_y : 0;
+        const mouthX = typeof mouth_x === 'number' ? mouth_x : 0;
+        const mouthY = typeof mouth_y === 'number' ? mouth_y : 0;
+        const eyeScale = typeof eye_scale === 'number' ? eye_scale : 1;
+        const mouthScale = typeof mouth_scale === 'number' ? mouth_scale : 1;
+        return (
+            <div style={{ position: 'relative', width: size, height: size, margin: 0, flexShrink: 0, transition: 'width 0.1s, height 0.1s' }}>
+                <div style={{ position: 'absolute', left: 0, top: 0, width: size, height: size, borderRadius: '50%', background: '#111', boxShadow: '0 2px 8px #8888', border: '2px solid #fff', zIndex: 1, transition: 'width 0.1s, height 0.1s' }} />
+                {/* Eyes */}
+                {eyeIdx !== 0 && eyesImages[eyeIdx]?.src ? (
+                    <img src={eyesImages[eyeIdx].src} alt="eye" style={{ position: 'absolute', left: size * 0.3 + eyeX, top: size * 0.37 + eyeY, width: size * 0.4 * eyeScale, height: size * 0.18 * eyeScale, zIndex: 2, transition: 'left 0.1s, top 0.1s, width 0.1s, height 0.1s' }} />
+                ) : eyeIdx !== 0 ? (
+                    <div style={{position:'absolute',left:size*0.3,top:size*0.37,width:size*0.4,height:size*0.18,zIndex:2,background:'#e22',color:'#fff',fontWeight:900,fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}}>?</div>
+                ) : null}
+                {/* Mouth */}
+                {mouthIdx !== 0 && mouthImages[mouthIdx]?.src ? (
+                    <img src={mouthImages[mouthIdx].src} alt="mouth" style={{ position: 'absolute', left: size * 0.3 + mouthX, top: size * 0.67 + mouthY, width: size * 0.4 * mouthScale, height: size * 0.18 * mouthScale, zIndex: 3, transition: 'left 0.1s, top 0.1s, width 0.1s, height 0.1s' }} />
+                ) : mouthIdx !== 0 ? (
+                    <div style={{position:'absolute',left:size*0.3,top:size*0.67,width:size*0.4,height:size*0.18,zIndex:3,background:'#e22',color:'#fff',fontWeight:900,fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}}>?</div>
+                ) : null}
+            </div>
+        );
     }
 
     return (
@@ -323,12 +501,12 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                 />
             </div>
             {/* Popup classique pour les autres nodes uniquement */}
-            {selectedNode && (
+            {selectedNode && selectedNode.id !== myNodeId && (
                 <div
                     className="profile-popup"
                     style={{
                         position: 'fixed',
-                        top: 30,
+                        top: 50, // décale de 20px vers le bas
                         left: 12,
                         width: 320,
                         minWidth: 320,
@@ -363,50 +541,29 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                                 marginBottom: 2,
                                 fontSize: 18,
                                 fontWeight: 600,
-                                cursor: selectedNode.id === myNodeId ? 'pointer' : 'default',
+                                cursor: 'default',
                                 boxSizing: 'border-box',
                             }}
-                            onClick={selectedNode.id === myNodeId ? () => handleKeywordRemove(i) : undefined}
                             >{kw}{i < getKeywords(selectedNode).length - 1 ? ',' : ''}</span>
                         ))}
-                        {selectedNode.id === myNodeId && getKeywords(selectedNode).length < 3 && (
-                            <>
-                                <input
-                                    value={keywordEdit}
-                                    onChange={e => setKeywordEdit(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleKeywordAdd(); }}
-                                    style={{
-                                        fontFamily: 'Menlo',
-                                        fontSize: 18,
-                                        border: 'none',
-                                        outline: 'none',
-                                        background: 'none',
-                                        borderBottom: '2px solid #111',
-                                        marginLeft: 8,
-                                        width: 90,
-                                        boxSizing: 'border-box',
-                                    }}
-                                    maxLength={16}
-                                    placeholder="+ keyword"
-                                />
-                                {caretVisible && <span style={{ borderLeft: '2.5px solid #111', height: 24, marginLeft: -2 }} />}
-                            </>
-                        )}
                     </div>
                 </div>
             )}
             {/* Bouton rond noir (photo profil) en bas à droite, toujours visible si c'est moi */}
             {myNodeId && (
                 <button
-                    onClick={() => setShowCustomize(v => !v)}
+                    onClick={() => {
+                        setSelectedNode(graphData.nodes.find(n => n.id === myNodeId));
+                        setShowCustomize(true);
+                    }}
                     style={{
                         position: 'fixed',
                         right: 24,
                         bottom: 24,
-                        width: 54,
-                        height: 54,
+                        width: faceSize, // identique à la bulle de personnalisation
+                        height: faceSize,
                         borderRadius: '50%',
-                        background: '#111',
+                        background: 'transparent', // pour laisser CustomFace gérer le fond
                         border: 'none',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
                         zIndex: 1100,
@@ -416,29 +573,26 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                         cursor: 'pointer',
                         padding: 0
                     }}
-                    title="Personnaliser mon point"
+                    title="Profil perso"
                 >
-                    {/* Smiley ou icône profil */}
-                    <span style={{ color: '#fff', fontSize: 20, fontFamily: 'Menlo' }}>😶‍🌫️</span>
+                    <CustomFace {...custom} size={faceSize} />
                 </button>
             )}
-            {/* Fenêtre profil perso, décalée à gauche du rond noir */}
-            {showCustomize && (
+            {/* Popup profil perso (avec bouton personnaliser) */}
+            {showCustomize && myNodeId && selectedNode && selectedNode.id === myNodeId && (
                 <div
-                    className="customize-popup"
+                    className="profile-popup"
                     style={{
                         position: 'fixed',
                         right: 90,
                         bottom: 32,
-                        width: 320,
-                        minWidth: 320,
-                        maxWidth: 320,
-                        minHeight: 120,
+                        width: 400,
+                        minHeight: 240,
                         background: 'rgba(255,255,255,0.98)',
                         borderRadius: 16,
                         boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
                         zIndex: 1099,
-                        padding: '28px 24px',
+                        padding: '36px 32px 24px 32px',
                         fontFamily: 'Menlo, monospace',
                         fontSize: 20,
                         color: '#111',
@@ -446,86 +600,185 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                         flexDirection: 'column',
                         alignItems: 'flex-start',
                         boxSizing: 'border-box',
-                        gap: 0
+                        gap: 0,
+                        justifyContent: 'flex-end',
                     }}
                 >
-                    {/* Ligne pseudo */}
-                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8, width: '100%' }}>
-                        <span style={{ fontWeight: 700, fontSize: 20, marginRight: 0 }}>&gt; USER/</span>
-                        <input
-                            value={editValue}
-                            onChange={e => {
-                                setEditValue(e.target.value);
-                                if (editingId !== null) {
-                                    setGraphData(gd => ({
-                                        ...gd,
-                                        nodes: gd.nodes.map(n => n.id === editingId ? { ...n, label: e.target.value } : n)
-                                    }));
-                                }
-                            }}
-                            onKeyDown={e => { if (e.key === 'Enter') handleInputBlurOrEnter(); }}
-                            style={{
-                                fontFamily: 'Menlo',
-                                fontWeight: 600,
-                                fontSize: 20,
-                                border: 'none',
-                                outline: 'none',
-                                background: 'none',
-                                borderBottom: '2px solid #111',
-                                color: '#111',
-                                width: 110,
-                                marginRight: 2,
-                                padding: 0,
-                                lineHeight: 1.1,
-                                boxSizing: 'border-box',
-                            }}
-                            maxLength={24}
-                        />
-                        {caretVisible && <span style={{ borderLeft: '2px solid #111', height: 20, marginLeft: -2 }} />}
-                    </div>
-                    {/* Mots-clés avec caret, style sobre et compact */}
-                    <div style={{ width: '100%', marginBottom: 2, display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 0 }}>
-                        {getKeywords({ id: myNodeId, ...graphData.nodes.find(n => n.id === myNodeId) }).map((kw, i, arr) => (
-                            <span key={i} style={{
-                                color: '#888',
-                                fontSize: 16,
-                                fontWeight: 600,
-                                marginRight: i < arr.length - 1 ? 2 : 0,
-                                cursor: 'pointer',
-                                borderBottom: '1.5px solid #eee',
-                                marginBottom: 2,
-                                padding: '0 2px',
-                                boxSizing: 'border-box',
-                            }}
-                            onClick={() => handleKeywordRemoveCustom(i)}
-                            >{kw}{i < arr.length - 1 ? ',' : ''}</span>
-                        ))}
-                        {getKeywords({ id: myNodeId, ...graphData.nodes.find(n => n.id === myNodeId) }).length < 3 && (
-                            <>
-                                <input
-                                    value={keywordEdit}
-                                    onChange={e => setKeywordEdit(e.target.value)}
-                                    onKeyDown={e => { if (e.key === 'Enter') handleKeywordAddCustom(); }}
-                                    style={{
-                                        fontFamily: 'Menlo',
-                                        fontSize: 16,
-                                        border: 'none',
-                                        outline: 'none',
-                                        background: 'none',
-                                        borderBottom: '1.5px solid #bbb',
-                                        color: '#bbb',
-                                        width: 80,
-                                        marginLeft: 2,
-                                        padding: 0,
-                                        marginBottom: 2,
-                                        boxSizing: 'border-box',
-                                    }}
-                                    maxLength={16}
-                                    placeholder="+ mot-clé"
-                                />
-                                {caretVisible && <span style={{ borderLeft: '1.5px solid #bbb', height: 14, marginLeft: -2 }} />}
-                            </>
+                    {/* Pseudo éditable avec caret fin */}
+                    <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 24, letterSpacing: 1, minHeight: 32, display: 'flex', alignItems: 'center' }}>
+                        {editingId === myNodeId ? (
+                            <input
+                                autoFocus
+                                value={editValue}
+                                onChange={e => setEditValue(e.target.value)}
+                                onBlur={handleInputBlurOrEnter}
+                                onKeyDown={e => { if (e.key === 'Enter') handleInputBlurOrEnter(); if (e.key === 'Escape') setEditingId(null); }}
+                                style={{
+                                    fontWeight: 700,
+                                    fontSize: 24,
+                                    fontFamily: 'Menlo, monospace',
+                                    border: 'none',
+                                    outline: 'none',
+                                    background: 'transparent',
+                                    color: '#111',
+                                    width: 220,
+                                    padding: 0,
+                                    margin: 0,
+                                    letterSpacing: 1
+                                }}
+                            />
+                        ) : (
+                            <span
+                                style={{ cursor: 'pointer', userSelect: 'text' }}
+                                onClick={() => { setEditingId(myNodeId); setEditValue(selectedNode.label || selectedNode.pseudo || selectedNode.id); }}
+                            >
+                                /user/{selectedNode.label || selectedNode.pseudo || selectedNode.id}
+                            </span>
                         )}
+                        {/* Caret fin */}
+                        {caretVisible && (
+                            <span style={{display:'inline-block',width:4,height:22,background:'#111',marginLeft:4,verticalAlign:'middle',borderRadius:2,transition:'background 0.2s'}}></span>
+                        )}
+                    </div>
+                    {/* Keywords éditables */}
+                    <div style={{ marginBottom: 30, fontSize: 18, width: '100%', display: 'flex', flexWrap: 'wrap', alignItems: 'center', minHeight: 36 }}>
+                        <span style={{ fontWeight: 600, fontSize: 18, marginRight: 10 }}>mots-clés :</span>
+                        {getKeywords(selectedNode).map((kw, i) => (
+                            <span key={i} style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                background: '#eee',
+                                color: '#111',
+                                borderRadius: 8,
+                                padding: '4px 12px',
+                                marginRight: 6,
+                                marginBottom: 2,
+                                fontSize: 18,
+                                fontWeight: 600,
+                                cursor: 'default',
+                                boxSizing: 'border-box',
+                                position: 'relative'
+                            }}>
+                                {kw}
+                                <button onClick={() => handleKeywordRemoveCustom(i)} style={{
+                                    marginLeft: 6,
+                                    background: 'none',
+                                    border: 'none',
+                                    color: '#e22',
+                                    fontWeight: 900,
+                                    fontSize: 18,
+                                    cursor: 'pointer',
+                                    lineHeight: 1,
+                                    padding: 0
+                                }} title="Supprimer">×</button>
+                                {i < getKeywords(selectedNode).length - 1 ? <span style={{marginLeft:2}}>,</span> : null}
+                            </span>
+                        ))}
+                        {/* Ajout mot-clé */}
+                        {getKeywords(selectedNode).length < 3 && (
+                            <input
+                                value={keywordEdit}
+                                onChange={e => setKeywordEdit(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') handleKeywordAddCustom(); if (e.key === 'Escape') setKeywordEdit(''); }}
+                                placeholder="ajouter..."
+                                style={{
+                                    fontSize: 18,
+                                    fontFamily: 'Menlo, monospace',
+                                    border: 'none',
+                                    outline: 'none',
+                                    background: 'transparent',
+                                    color: '#111',
+                                    width: 90,
+                                    marginLeft: 6,
+                                    marginBottom: 2
+                                }}
+                            />
+                        )}
+                        {caretVisible && <span style={{display:'inline-block',width:4,height:16,background:'#111',marginLeft:2,verticalAlign:'middle',borderRadius:2,transition:'background 0.2s'}}></span>}
+                    </div>
+                    <button
+                        onClick={openCustomize}
+                        style={{
+                            marginTop: 18,
+                            background: '#fff',
+                            border: '1.5px solid #bbb',
+                            borderRadius: 10,
+                            padding: '7px 18px 7px 14px',
+                            cursor: 'pointer',
+                            fontFamily: 'Menlo',
+                            fontWeight: 700,
+                            fontSize: 16,
+                            color: '#111',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            boxShadow: '0 2px 8px rgba(0,0,0,0.07)',
+                            transition: 'background 0.15s, color 0.15s',
+                        }}
+                    >
+                        <img src={personaliserIcon.src} alt="personnaliser" style={{ width: 22, height: 22, marginRight: 6, filter: 'drop-shadow(0 1px 1px #111)' }} />
+                        personnaliser mon point
+                    </button>
+                </div>
+            )}
+            {/* Fenêtre minimaliste de personnalisation à droite de la popup profil perso */}
+            {showMiniCustomize && myNodeId && (
+                <div className="mini-customize-popup" style={{
+                    position: 'fixed',
+                    right: 'calc(90px + 400px + 16px)',
+                    bottom: 32,
+                    width: 370,
+                    height: 340, // augmenté pour laisser la place au bouton
+                    background: '#fff',
+                    borderRadius: 22,
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.10)',
+                    zIndex: 1102,
+                    padding: '24px 28px 18px 28px',
+                    fontFamily: 'Menlo, monospace',
+                    fontSize: 17,
+                    color: '#111',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'stretch',
+                    boxSizing: 'border-box',
+                    gap: 0,
+                    transition: 'right 0.2s',
+                    overflow: 'hidden',
+                    justifyContent: 'space-between', // bouton toujours en bas
+                }}>
+                    {/* Croix de fermeture */}
+                    <button onClick={closeCustomize} style={{position:'absolute',top:10,right:10,fontSize:28,background:'none',border:'none',color:'#222',cursor:'pointer',zIndex:10}} title="fermer">×</button>
+                    <div style={{display:'flex',flexDirection:'row',alignItems:'flex-start',gap:0, width:'100%'}}>
+                        {/* Bonhomme à gauche */}
+                        <CustomFace {...customDraft} size={faceSize} />
+                        {/* Flèches de sélection à droite, décalées vers le bas, + sliders pour position et taille */}
+                        <div style={{display:'flex',flexDirection:'column',alignItems:'flex-start',gap:10,marginLeft:24,marginTop:28, flexShrink:1, minWidth:0, maxWidth:170}}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap:'wrap' }}>
+                                <button className="customize-arrow-btn" onClick={e => { e.stopPropagation(); handleChangeCustom('eye', -1); setSelectedPart('eye'); }} style={{ border: 'none', background: 'none', fontSize: 26, cursor: 'pointer', color: '#111', padding: 0, fontWeight:700, width:32, height:32, lineHeight:'32px', borderRadius:0, transition:'background 0.1s' }}>&lt;</button>
+                                <span className="customize-arrow-btn" onClick={() => setSelectedPart('eye')} style={{ width: 50, display: 'inline-block', textAlign: 'center', fontWeight: selectedPart==='eye'?900:600, textDecoration: selectedPart==='eye'?'underline':'none', cursor:'pointer', color: selectedPart==='eye'?'#111':'#bbb', letterSpacing:1, fontSize:18 }}>YEUX</span>
+                                <button className="customize-arrow-btn" onClick={e => { e.stopPropagation(); handleChangeCustom('eye', 1); setSelectedPart('eye'); }} style={{ border: 'none', background: 'none', fontSize: 26, cursor: 'pointer', color: '#111', padding: 0, fontWeight:700, width:32, height:32, lineHeight:'32px', borderRadius:0, transition:'background 0.1s' }}>&gt;</button>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap:'wrap' }}>
+                                <button className="customize-arrow-btn" onClick={e => { e.stopPropagation(); handleChangeCustom('mouth', -1); setSelectedPart('mouth'); }} style={{ border: 'none', background: 'none', fontSize: 26, cursor: 'pointer', color: '#111', padding: 0, fontWeight:700, width:32, height:32, lineHeight:'32px', borderRadius:0, transition:'background 0.1s' }}>&lt;</button>
+                                <span className="customize-arrow-btn" onClick={() => setSelectedPart('mouth')} style={{ width: 70, display: 'inline-block', textAlign: 'center', fontWeight: selectedPart==='mouth'?900:600, textDecoration: selectedPart==='mouth'?'underline':'none', cursor:'pointer', color: selectedPart==='mouth'?'#111':'#bbb', letterSpacing:1, fontSize:18 }}>BOUCHE</span>
+                                <button className="customize-arrow-btn" onClick={e => { e.stopPropagation(); handleChangeCustom('mouth', 1); setSelectedPart('mouth'); }} style={{ border: 'none', background: 'none', fontSize: 26, cursor: 'pointer', color: '#111', padding: 0, fontWeight:700, width:32, height:32, lineHeight:'32px', borderRadius:0, transition:'background 0.1s' }}>&gt;</button>
+                            </div>
+                            {/* Sliders pour X, Y, Scale */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 5, width: '100%' }}>
+                                <label style={{ fontSize: 12, fontWeight: 700, color: '#222', marginBottom: 0 }}>Position X</label>
+                                <input type="range" min={-24} max={24} step={1} value={customDraft[selectedPart + '_x'] || 0} onChange={e => setCustomDraft(prev => ({ ...prev, [selectedPart + '_x']: Number(e.target.value) }))} style={{ width: '100%' }} />
+                                <label style={{ fontSize: 12, fontWeight: 700, color: '#222', marginBottom: 0 }}>Position Y</label>
+                                <input type="range" min={-2} max={24} step={1} value={customDraft[selectedPart + '_y'] || 0} onChange={e => setCustomDraft(prev => ({ ...prev, [selectedPart + '_y']: Number(e.target.value) }))} style={{ width: '100%' }} />
+                                <label style={{ fontSize: 12, fontWeight: 700, color: '#222', marginBottom: 0 }}>Taille</label>
+                                <input type="range" min={0.5} max={2} step={0.01} value={customDraft[selectedPart + '_scale'] || 1} onChange={e => setCustomDraft(prev => ({ ...prev, [selectedPart + '_scale']: Number(e.target.value) }))} style={{ width: '100%' }} />
+                            </div>
+                        </div>
+                    </div>
+                    {/* Bouton enregistrer toujours visible, bien positionné */}
+                    <div style={{ display: 'flex', gap: 0, marginTop: 10, justifyContent: 'flex-start', width: '100%' }}>
+                        <button onClick={saveCustomize} style={{ fontSize: 18, border: 'none', background: '#eee', color: '#111', borderRadius: 18, padding: '10px 32px', cursor: 'pointer', fontWeight: 900, letterSpacing:1, display:'flex',alignItems:'center',gap:10, boxShadow:'0 2px 8px #eee', minWidth: '100%'}}>
+                            <span style={{fontSize:22,marginRight:6,display:'inline-block'}}>●</span> Sauvegarder
+                        </button>
                     </div>
                 </div>
             )}

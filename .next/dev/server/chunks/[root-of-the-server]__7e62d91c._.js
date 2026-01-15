@@ -64,6 +64,8 @@ return __turbopack_context__.a(async (__turbopack_handle_async_dependencies__, _
 __turbopack_context__.s([
     "GET",
     ()=>GET,
+    "PATCH",
+    ()=>PATCH,
     "POST",
     ()=>POST
 ]);
@@ -110,6 +112,44 @@ async function POST(request) {
             ]
         });
         return Response.json(result.rows[0]);
+    } catch (e) {
+        return new Response(JSON.stringify({
+            error: e.message
+        }), {
+            status: 500
+        });
+    }
+}
+async function PATCH(request) {
+    const { user1_id, user2_id, action } = await request.json();
+    if (action !== 'delete' || !user1_id || !user2_id || user1_id === user2_id) {
+        return new Response(JSON.stringify({
+            error: 'action "delete" et user1_id/user2_id requis.'
+        }), {
+            status: 400
+        });
+    }
+    // Toujours stocker dans l'ordre croissant pour unicité
+    const [a, b] = user1_id < user2_id ? [
+        user1_id,
+        user2_id
+    ] : [
+        user2_id,
+        user1_id
+    ];
+    try {
+        await __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$turso$2e$js__$5b$app$2d$route$5d$__$28$ecmascript$29$__["turso"].execute({
+            sql: 'DELETE FROM relations WHERE user1_id = ? AND user2_id = ?',
+            args: [
+                a,
+                b
+            ]
+        });
+        return new Response(JSON.stringify({
+            success: true
+        }), {
+            status: 200
+        });
     } catch (e) {
         return new Response(JSON.stringify({
             error: e.message
