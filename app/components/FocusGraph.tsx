@@ -1,6 +1,6 @@
 "use client"
 
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import ForceGraph3D, { ForceGraphMethods } from "react-force-graph-3d";
 import * as THREE from "three";
 import personaliserIcon from '../assets/icons/personaliser.png';
@@ -22,7 +22,7 @@ import mouthNone from '../assets/face/mouse/none.png';
 const eyesImages = [eyeNone, eye1, eye2, eye3, eye4, eye5];
 const mouthImages = [mouthNone, mouth1, mouth2, mouth3, mouth4, mouth5];
 
-function FocusGraph({data, userIp, onUserNodeClick}) {
+function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
     const fgRef = useRef<ForceGraphMethods>(null);
     const [graphData, setGraphData] = useState({nodes: [], links: []});
     const [editingId, setEditingId] = useState(null);
@@ -85,10 +85,10 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
 
         // Force dynamique, répulsion très faible
         const charge = fgRef.current.d3Force('charge');
-        if (charge) charge.strength(-Math.max(2, 8 - n));
+        if (charge) charge.strength(-Math.max(3, 5 - n));
         const collide = fgRef.current.d3Force('collide');
         if (collide) {
-            collide.strength(1);
+            collide.strength(1.2);
             collide.radius(Math.max(2, 8 - n));
         }
     }, [graphData]);
@@ -153,50 +153,86 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
         const mouth_scale = node.mouth_scale ?? 1;
         const isMe = node.id === myNodeId;
         const isEditing = editingId === node.id;
-        // Canvas élargi pour le visage + pseudo
+        // --- Nouvelle logique : tout basé sur faceSize pour correspondre à CustomFace ---
+        const faceSize = 120;
         const canvas = document.createElement("canvas");
         canvas.width = 700;
         canvas.height = 160;
         const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // --- Cercle de fond ---
+        // --- Cercle de fond noir pur, sans ombre ni contour, centré comme dans CustomFace ---
         ctx.save();
         ctx.beginPath();
-        ctx.arc(40, 60, 28, 0, 2 * Math.PI);
-        ctx.fillStyle = isMe ? "#e22" : "#111";
-        ctx.shadowColor = '#888';
-        ctx.shadowBlur = 8;
+        ctx.arc(faceSize / 2, faceSize / 2, faceSize / 2, 0, 2 * Math.PI);
+        ctx.fillStyle = '#000';
+        ctx.globalAlpha = 1;
         ctx.fill();
         ctx.restore();
         // --- Yeux ---
         const eyeIdx = typeof eye === 'number' && eye > 0 && eye < eyesImages.length ? eye : 0;
+        const mouthIdx = typeof mouth === 'number' && mouth > 0 && mouth < mouthImages.length ? mouth : 0;
         const eyeX = typeof eye_x === 'number' ? eye_x : 0;
         const eyeY = typeof eye_y === 'number' ? eye_y : 0;
-        const eyeScale = typeof eye_scale === 'number' ? eye_scale : 1;
-        let eyeDrawn = false;
-        if (eyeIdx !== 0 && eyesImages[eyeIdx]?.src) {
-            const img = new window.Image();
-            img.src = eyesImages[eyeIdx].src;
-            img.onload = () => {
-                ctx.drawImage(img, 40 - 28 + 28 * 0.3 + eyeX, 60 - 28 + 28 * 0.37 + eyeY, 28 * 0.4 * eyeScale, 28 * 0.18 * eyeScale);
-                texture.needsUpdate = true;
-            };
-            // Dessine une version vide en attendant le chargement
-        }
-        // --- Bouche ---
-        const mouthIdx = typeof mouth === 'number' && mouth > 0 && mouth < mouthImages.length ? mouth : 0;
         const mouthX = typeof mouth_x === 'number' ? mouth_x : 0;
         const mouthY = typeof mouth_y === 'number' ? mouth_y : 0;
+        const eyeScale = typeof eye_scale === 'number' ? eye_scale : 1;
         const mouthScale = typeof mouth_scale === 'number' ? mouth_scale : 1;
-        if (mouthIdx !== 0 && mouthImages[mouthIdx]?.src) {
-            const img = new window.Image();
-            img.src = mouthImages[mouthIdx].src;
-            img.onload = () => {
-                ctx.drawImage(img, 40 - 28 + 28 * 0.3 + mouthX, 60 - 28 + 28 * 0.67 + mouthY, 28 * 0.4 * mouthScale, 28 * 0.18 * mouthScale);
-                texture.needsUpdate = true;
-            };
+        // --- Image cache global pour éviter de recharger à chaque frame ---
+        const imgCache = (window as any)._faceImgCache = (window as any)._faceImgCache || {};
+        function getCachedImg(src) {
+            if (!src) return null;
+            if (!imgCache[src]) {
+                const img = new window.Image();
+                img.src = src;
+                imgCache[src] = img;
+            }
+            return imgCache[src];
         }
-        // --- PSEUDO: font size auto-fit ---
+        function drawImgCached(imgSrc, dx, dy, dw, dh) {
+            return new Promise<void>(resolve => {
+                const img = getCachedImg(imgSrc);
+                if (!img) return resolve(undefined);
+                if (img.complete && img.naturalWidth > 0) {
+                    ctx.drawImage(img, dx, dy, dw, dh);
+                    resolve(undefined);
+                } else {
+                    img.onload = () => {
+                        ctx.drawImage(img, dx, dy, dw, dh);
+                        resolve(undefined);
+                    };
+                    img.onerror = () => resolve(undefined);
+                }
+            });
+        }
+        // --- Positionnement identique à CustomFace ---
+        const eyeDrawX = faceSize * 0.3 + eyeX;
+        const eyeDrawY = faceSize * 0.37 + eyeY;
+        const eyeDrawW = faceSize * 0.4 * eyeScale;
+        const eyeDrawH = faceSize * 0.18 * eyeScale;
+        const mouthDrawX = faceSize * 0.3 + mouthX;
+        const mouthDrawY = faceSize * 0.67 + mouthY;
+        const mouthDrawW = faceSize * 0.4 * mouthScale;
+        const mouthDrawH = faceSize * 0.18 * mouthScale;
+        const promises = [];
+        if (eyeIdx !== 0 && eyesImages[eyeIdx]?.src) {
+            promises.push(drawImgCached(
+                eyesImages[eyeIdx].src,
+                eyeDrawX,
+                eyeDrawY,
+                eyeDrawW,
+                eyeDrawH
+            ));
+        }
+        if (mouthIdx !== 0 && mouthImages[mouthIdx]?.src) {
+            promises.push(drawImgCached(
+                mouthImages[mouthIdx].src,
+                mouthDrawX,
+                mouthDrawY,
+                mouthDrawW,
+                mouthDrawH
+            ));
+        }
+        // --- PSEUDO: font size auto-fit, décalé à droite du visage ---
         let fontSize = 54;
         const label = isEditing ? editValue : (node.label || node.pseudo || node.id);
         ctx.font = `bold ${fontSize}px Menlo, monospace`;
@@ -209,31 +245,41 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
         ctx.fillStyle = "#111";
         ctx.textAlign = "left";
         ctx.textBaseline = "middle";
-        ctx.fillText(`/user/${label}`, 90, 64);
+        ctx.fillText(`/user/${label}`, faceSize + 30, faceSize / 2);
         // Caret clignotant noir UNIQUEMENT sur le node courant (toujours)
         if (isMe && caretVisible) {
             const caretTextWidth = ctx.measureText(`/user/${label}`).width;
             ctx.fillStyle = '#111';
-            ctx.fillRect(90 + caretTextWidth + 6, 35, 4, 58);
+            ctx.fillRect(faceSize + 30 + caretTextWidth + 6, faceSize / 2 - 29, 4, 58);
         }
         // Affiche/édite les mots-clés sous le pseudo (grosse ligne)
         const keywords = node.keywords || [];
         ctx.font = "32px Menlo, monospace";
-        let x = 90;
-        const y = 120;
+        let x = faceSize + 30;
+        const y = faceSize / 2 + 56;
         keywords.forEach((kw, i) => {
             const kwText = `#${kw}${i < keywords.length - 1 ? ',' : ''}`;
             ctx.fillStyle = isMe ? "#e22" : "#444";
             ctx.fillText(kwText, x, y);
             x += ctx.measureText(kwText).width + (isMe ? 50 : 36);
         });
+        // --- Prépare la texture et le sprite ---
         const texture = new THREE.CanvasTexture(canvas);
         const material = new THREE.SpriteMaterial({map: texture});
         material.transparent = true;
         material.alphaTest = 0.05;
         const sprite = new THREE.Sprite(material);
-        sprite.scale.set(30, 7, 1);
-        sprite.center.set(40/700, 0.60);
+        sprite.scale.set(18, 4.5, 1); // taille intermédiaire pour un point bien visible
+        sprite.center.set((faceSize/2)/canvas.width, (faceSize/2)/canvas.height);
+        if (promises.length > 0) {
+            Promise.all(promises).then(() => {
+                texture.needsUpdate = true;
+                if (sprite && sprite.material) {
+                    sprite.material.needsUpdate = true;
+                }
+                // SUPPRIMÉ : ne jamais faire setGraphData ici !
+            });
+        }
         return sprite;
     }
 
@@ -274,6 +320,7 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                     body: JSON.stringify({ pseudo: editValue }),
                     headers: { 'Content-Type': 'application/json' },
                 });
+                if (onGraphUpdate) onGraphUpdate();
             } catch (e) {}
             setGraphData(gd => ({
                 ...gd,
@@ -303,6 +350,7 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                 body: JSON.stringify({ keywords: newKeywords }),
                 headers: { 'Content-Type': 'application/json' },
             });
+            if (onGraphUpdate) onGraphUpdate();
         } catch {}
         setGraphData(gd => ({
             ...gd,
@@ -323,6 +371,7 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                 body: JSON.stringify({ keywords: newKeywords }),
                 headers: { 'Content-Type': 'application/json' },
             });
+            if (onGraphUpdate) onGraphUpdate();
         } catch {}
         setGraphData(gd => ({
             ...gd,
@@ -351,6 +400,7 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
             }));
             setSelectedNode(prev => prev && prev.id === myNodeId ? { ...prev, keywords: newKeywords } : prev);
             setKeywordEdit("");
+            if (onGraphUpdate) onGraphUpdate();
         });
     }
     function handleKeywordRemoveCustom(idx) {
@@ -367,6 +417,7 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
                 nodes: gd.nodes.map(n => n.id === myNodeId ? { ...n, keywords: newKeywords } : n)
             }));
             setSelectedNode(prev => prev && prev.id === myNodeId ? { ...prev, keywords: newKeywords } : prev);
+            if (onGraphUpdate) onGraphUpdate();
         });
     }
 
@@ -490,12 +541,32 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
         );
     }
 
+    // Fusionne la customisation dans le node courant avant le rendu du graph, mais seulement quand custom/myNodeId/graphData changent
+    const mergedGraphData = useMemo(() => {
+        // Force tous les ids à string pour nodes et links
+        const nodes = graphData.nodes.map(n =>
+            n.id === myNodeId
+                ? { ...n, ...custom, id: String(n.id), fx: 0, fy: 0, fz: 0 } // force le node courant au centre
+                : { ...n, id: String(n.id) }
+        );
+        const links = (graphData.links || []).map((l) => ({
+            ...l,
+            source: String(l.source),
+            target: String(l.target)
+        }));
+        return {
+            ...graphData,
+            nodes,
+            links
+        };
+    }, [graphData, custom, myNodeId]);
+
     return (
         <>
             <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'auto' }}>
                 <ForceGraph3D
                     ref={fgRef}
-                    graphData={graphData}
+                    graphData={mergedGraphData}
                     nodeAutoColorBy="group"
                     onNodeClick={handleNodeClick}
                     nodeThreeObject={nodeThreeObject}

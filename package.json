@@ -14,7 +14,8 @@
     "react": "latest",
     "react-dom": "latest",
     "react-force-graph-3d": "^1.29.0",
-    "three": "^0.182.0"
+    "three": "^0.182.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/react": "19.2.8",

@@ -5,6 +5,7 @@ import { getUserPositions } from '../lib/forceGraph';
 import FocusGraph from './components/FocusGraphWrapper';
 import SidePanel from './components/SidePanel';
 import UserPopup from './components/UserPopup';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function Home() {
   const [users, setUsers] = useState([]);
@@ -35,7 +36,31 @@ export default function Home() {
   // }, [me]);
 
   useEffect(() => {
-    fetch('/api/users', { method: 'POST' })
+    // Gestion UUID utilisateur (cookie)
+    function getCookie(name) {
+      const value = `; ${document.cookie}`;
+      const parts = value.split(`; ${name}=`);
+      if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+    function setCookie(name, value, days) {
+      let expires = '';
+      if (days) {
+        const date = new Date();
+        date.setTime(date.getTime() + (days*24*60*60*1000));
+        expires = "; expires=" + date.toUTCString();
+      }
+      document.cookie = name + "=" + (value || "")  + expires + "; path=/";
+    }
+    let uuid = getCookie('user_uuid');
+    if (!uuid) {
+      uuid = uuidv4();
+      setCookie('user_uuid', uuid, 365);
+    }
+    fetch('/api/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uuid })
+    })
       .then(res => {
         if (!res.ok) throw new Error('POST /api/users: ' + res.status);
         return res.json();
@@ -158,7 +183,7 @@ export default function Home() {
       <div style={{ width: '100vw', height: '70vh', minHeight: 400, marginTop: 54 }}>
         <FocusGraph data={graphData} userIp={me?.ip} onUserNodeClick={u => {
           if (u.id !== me?.id) setUserPopups(prev => prev.some(p => p.id === u.id) ? prev : [...prev, u]);
-        }} />
+        }} onGraphUpdate={refresh} />
       </div>
       {/* Colonne unique à droite : panneau de bienvenue en haut, profils/notifications en dessous */}
       <div style={{
@@ -179,6 +204,13 @@ export default function Home() {
             <SidePanel onClose={async () => {
               setShowWelcome(false);
               setWelcomeClosedManually(true);
+              if (me?.id) {
+                await fetch(`/api/users/${me.id}`, {
+                  method: 'PATCH',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ starter: 0 })
+                });
+              }
             }} />
           </div>
         )}
