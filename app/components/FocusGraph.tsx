@@ -159,7 +159,6 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
         canvas.height = 160;
         const ctx = canvas.getContext("2d");
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        // Dessine le visage personnalisé du node
         // --- Cercle de fond ---
         ctx.save();
         ctx.beginPath();
@@ -174,10 +173,15 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
         const eyeX = typeof eye_x === 'number' ? eye_x : 0;
         const eyeY = typeof eye_y === 'number' ? eye_y : 0;
         const eyeScale = typeof eye_scale === 'number' ? eye_scale : 1;
+        let eyeDrawn = false;
         if (eyeIdx !== 0 && eyesImages[eyeIdx]?.src) {
             const img = new window.Image();
             img.src = eyesImages[eyeIdx].src;
-            ctx.drawImage(img, 40 - 28 + 28 * 0.3 + eyeX, 60 - 28 + 28 * 0.37 + eyeY, 28 * 0.4 * eyeScale, 28 * 0.18 * eyeScale);
+            img.onload = () => {
+                ctx.drawImage(img, 40 - 28 + 28 * 0.3 + eyeX, 60 - 28 + 28 * 0.37 + eyeY, 28 * 0.4 * eyeScale, 28 * 0.18 * eyeScale);
+                texture.needsUpdate = true;
+            };
+            // Dessine une version vide en attendant le chargement
         }
         // --- Bouche ---
         const mouthIdx = typeof mouth === 'number' && mouth > 0 && mouth < mouthImages.length ? mouth : 0;
@@ -187,7 +191,10 @@ function FocusGraph({data, userIp, onUserNodeClick}) {
         if (mouthIdx !== 0 && mouthImages[mouthIdx]?.src) {
             const img = new window.Image();
             img.src = mouthImages[mouthIdx].src;
-            ctx.drawImage(img, 40 - 28 + 28 * 0.3 + mouthX, 60 - 28 + 28 * 0.67 + mouthY, 28 * 0.4 * mouthScale, 28 * 0.18 * mouthScale);
+            img.onload = () => {
+                ctx.drawImage(img, 40 - 28 + 28 * 0.3 + mouthX, 60 - 28 + 28 * 0.67 + mouthY, 28 * 0.4 * mouthScale, 28 * 0.18 * mouthScale);
+                texture.needsUpdate = true;
+            };
         }
         // --- PSEUDO: font size auto-fit ---
         let fontSize = 54;
