@@ -42,6 +42,7 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
     // Ajoute l'état pour la sélection de la partie à déplacer
     const [selectedPart, setSelectedPart] = useState('eye');
     const [faceSize, setFaceSize] = useState(120); // taille du visage (min 60, max 120)
+    const [allCustoms, setAllCustoms] = useState([]);
 
     // Resize listener pour canvas plein écran
     useEffect(() => {
@@ -139,6 +140,13 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
                 setCustomDraft(c);
             });
     }, [myNodeId]);
+
+    // Récupère toutes les customisations à chaque changement de graphData
+    useEffect(() => {
+        fetch('/api/customizations/all')
+            .then(r => r.json())
+            .then(setAllCustoms);
+    }, [graphData]);
 
     // Custom node: point + nom gros + caret clignotant noir UNIQUEMENT sur le node courant (toujours, même hors édition)
     function nodeThreeObject(node) {
@@ -543,12 +551,16 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
 
     // Fusionne la customisation dans le node courant avant le rendu du graph, mais seulement quand custom/myNodeId/graphData changent
     const mergedGraphData = useMemo(() => {
-        // Force tous les ids à string pour nodes et links
-        const nodes = graphData.nodes.map(n =>
-            n.id === myNodeId
-                ? { ...n, ...custom, id: String(n.id), fx: 0, fy: 0, fz: 0 } // force le node courant au centre
-                : { ...n, id: String(n.id) }
-        );
+        // Associe la customisation à chaque node si elle existe
+        const nodes = graphData.nodes.map(n => {
+            const custom = allCustoms.find(c => String(c.user_id) === String(n.id)) || {};
+            return {
+                ...n,
+                ...custom,
+                id: String(n.id),
+                ...(n.id === myNodeId ? { fx: 0, fy: 0, fz: 0 } : {})
+            };
+        });
         const links = (graphData.links || []).map((l) => ({
             ...l,
             source: String(l.source),
@@ -559,7 +571,7 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
             nodes,
             links
         };
-    }, [graphData, custom, myNodeId]);
+    }, [graphData, allCustoms, myNodeId]);
 
     return (
         <>
