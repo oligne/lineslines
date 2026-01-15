@@ -305,8 +305,8 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
         function onKeyDown(e) {
             if (e.key === "Enter") handleInputBlurOrEnter();
             else if (e.key === "Escape") setEditingId(null);
-            else if (e.key.length === 1) setEditValue(v => v + e.key);
-            else if (e.key === "Backspace") setEditValue(v => v.slice(0, -1));
+            // else if (e.key.length === 1) setEditValue(v => v + e.key);
+            // else if (e.key === "Backspace") setEditValue(v => v.slice(0, -1));
         }
         window.addEventListener("keydown", onKeyDown);
         return () => window.removeEventListener("keydown", onKeyDown);
