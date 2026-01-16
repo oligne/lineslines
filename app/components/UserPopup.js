@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import lieIcon from '../assets/icons/lie.png';
 import delieIcon from '../assets/icons/delie.png';
 
-export default function UserPopup({ user, me, onClose, small, showPseudo, onCreateRelation, onDeleteRelation, isLinked }) {
+export default function UserPopup({ user, me, relations, onClose, small, showPseudo, onCreateRelation, onDeleteRelation, isLinkedReverse }) {
   let keywordsArr = [];
   if (Array.isArray(user.keywords)) {
     keywordsArr = user.keywords;
@@ -12,6 +12,9 @@ export default function UserPopup({ user, me, onClose, small, showPseudo, onCrea
   const [keywords, setKeywords] = useState(keywordsArr);
   const [keywordEdit, setKeywordEdit] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Calcule isLinked à chaque render, en forçant la comparaison en string
+  const isLinked = !!relations?.find(r => String(r.user1_id) === String(me?.id) && String(r.user2_id) === String(user.id));
 
   async function handleKeywordAdd() {
     if (!keywordEdit.trim() || keywords.length >= 3) return;
@@ -158,8 +161,33 @@ export default function UserPopup({ user, me, onClose, small, showPseudo, onCrea
         onMouseOut={e => { e.currentTarget.style.background = '#fff'; }}
         >
           <img src={delieIcon.src} alt="délier" style={{ width: 47, height: 22, marginRight: 10 }} />
-          délier
+          délier nos points
         </button>
+      )}
+      {/* Message if only reverse link exists, below button */}
+      {isLinkedReverse && !isLinked && me?.id !== user.id && (
+        <div style={{ textAlign: 'center', fontFamily: 'Menlo', fontSize: 15, color: '#222', fontWeight: 600, opacity: 0.45, marginTop: 10 }}>
+          {user.pseudo || user.label || user.id} vous lie encore
+        </div>
+      )}
+      {/* Affiche l'icône et le texte si le lien subsiste dans l'autre sens */}
+      {relations && relations.find(r => r.user1_id === user.id && r.user2_id === me?.id) && me?.id !== user.id && (
+        <div style={{ display: 'flex', alignItems: 'center', marginTop: 10, gap: 8 }}>
+          {/* Icône diagramme de Venn (SVG) */}
+          <svg width="32" height="20" viewBox="0 0 32 20" style={{ marginRight: 4 }}>
+            <circle cx="12" cy="10" r="8" fill="#bbb" fillOpacity="0.5" />
+            <circle cx="20" cy="10" r="8" fill="#111" fillOpacity="0.5" />
+          </svg>
+          <span style={{ fontFamily: 'Menlo', fontSize: 15, color: '#222', fontWeight: 600 }}>
+            {user.pseudo || user.label || user.id} est encore lié à votre point
+          </span>
+        </div>
+      )}
+      {/* Message if both users are linked (reciproque) */}
+      {isLinked && relations?.find(r => String(r.user1_id) === String(user.id) && String(r.user2_id) === String(me?.id)) && me?.id !== user.id && (
+        <div style={{ textAlign: 'center', fontFamily: 'Menlo', fontSize: 15, color: '#222', fontWeight: 600, opacity: 0.45, marginTop: 10 }}>
+          Vous êtes tous les deux liés
+        </div>
       )}
     </div>
   );

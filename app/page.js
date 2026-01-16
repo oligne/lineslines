@@ -214,15 +214,26 @@ export default function Home() {
             }} />
           </div>
         )}
-        {userPopups.length > 0 && userPopups.map((u) => (
-          <div key={u.id} style={{pointerEvents: 'auto'}}>
-            <UserPopup user={u} me={me} onClose={() => setUserPopups(prev => prev.filter(p => p.id !== u.id))} small showPseudo
-              onCreateRelation={() => createRelation(me?.id, u.id)}
-              onDeleteRelation={id => deleteRelation(me?.id, id)}
-              isLinked={!!relations.find(r => (r.user1_id === me?.id && r.user2_id === u.id) || (r.user2_id === me?.id && r.user1_id === u.id))}
-            />
-          </div>
-        ))}
+        {userPopups.length > 0 && userPopups.map((u) => {
+          const isLinkedReverse = !!relations.find(r => String(r.user1_id) === String(u.id) && String(r.user2_id) === String(me?.id)) &&
+            !relations.find(r => String(r.user1_id) === String(me?.id) && String(r.user2_id) === String(u.id));
+          return (
+            <div key={u.id} style={{pointerEvents: 'auto'}}>
+              <UserPopup 
+                key={u.id + '-' + relations.length}
+                user={u}
+                me={me}
+                relations={relations}
+                isLinkedReverse={isLinkedReverse}
+                onClose={() => setUserPopups(prev => prev.filter(p => p.id !== u.id))}
+                small
+                showPseudo
+                onCreateRelation={() => createRelation(me?.id, u.id)}
+                onDeleteRelation={id => deleteRelation(me?.id, id)}
+              />
+            </div>
+          );
+        })}
       </div>
       {/* Ancien affichage 2D en commentaire pour test */}
       {/*

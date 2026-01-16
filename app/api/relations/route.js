@@ -12,16 +12,15 @@ export async function POST(request) {
   if (!user1_id || !user2_id || user1_id === user2_id) {
     return new Response(JSON.stringify({ error: 'user1_id et user2_id requis et différents.' }), { status: 400 });
   }
-  // Toujours stocker dans l'ordre croissant pour unicité
-  const [a, b] = user1_id < user2_id ? [user1_id, user2_id] : [user2_id, user1_id];
+  // NE PAS trier les IDs : chaque direction est indépendante
   try {
     await turso.execute({
       sql: 'INSERT OR IGNORE INTO relations (user1_id, user2_id) VALUES (?, ?)',
-      args: [a, b],
+      args: [user1_id, user2_id],
     });
     const result = await turso.execute({
       sql: 'SELECT * FROM relations WHERE user1_id = ? AND user2_id = ?',
-      args: [a, b],
+      args: [user1_id, user2_id],
     });
     return Response.json(result.rows[0]);
   } catch (e) {
@@ -35,12 +34,11 @@ export async function PATCH(request) {
   if (action !== 'delete' || !user1_id || !user2_id || user1_id === user2_id) {
     return new Response(JSON.stringify({ error: 'action "delete" et user1_id/user2_id requis.' }), { status: 400 });
   }
-  // Toujours stocker dans l'ordre croissant pour unicité
-  const [a, b] = user1_id < user2_id ? [user1_id, user2_id] : [user2_id, user1_id];
+  // NE PAS trier les IDs : chaque direction est indépendante
   try {
     await turso.execute({
       sql: 'DELETE FROM relations WHERE user1_id = ? AND user2_id = ?',
-      args: [a, b],
+      args: [user1_id, user2_id],
     });
     return new Response(JSON.stringify({ success: true }), { status: 200 });
   } catch (e) {

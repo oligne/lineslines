@@ -43,6 +43,7 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
     const [selectedPart, setSelectedPart] = useState('eye');
     const [faceSize, setFaceSize] = useState(120); // taille du visage (min 60, max 120)
     const [allCustoms, setAllCustoms] = useState([]);
+    const [welcomeClosedManually, setWelcomeClosedManually] = useState(false);
 
     // Resize listener pour canvas plein écran
     useEffect(() => {
@@ -83,15 +84,40 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
         const z = Math.max(-100, Math.min(200, n * 25));
         fgRef.current.cameraPosition({ x: 0, y: 0, z }, { x: 0, y: 0, z: 0 }, 0);
 
-
-        // Force dynamique, répulsion très faible
+        // Force dynamique, répulsion plus forte pour une meilleure répartition
         const charge = fgRef.current.d3Force('charge');
-        if (charge) charge.strength(-Math.max(3, 5 - n));
+        if (charge) charge.strength(-18);
         const collide = fgRef.current.d3Force('collide');
         if (collide) {
-            collide.strength(1.2);
-            collide.radius(Math.max(2, 8 - n));
+            collide.strength(2);
+            // Collision personnalisée selon les liens
+            collide.radius(node => {
+                // Pour chaque node, on regarde ses liens
+                const nodeId = node.id;
+                // Liens sortants
+                const outgoing = graphData.links.filter(l => l.source === nodeId);
+                // Liens entrants
+                const incoming = graphData.links.filter(l => l.target === nodeId);
+                // Réciproques
+                const reciprocal = outgoing.some(l => incoming.some(l2 => l2.source === l.target && l2.target === l.source));
+                if (reciprocal) return 10; // collision faible si réciproque
+                if (outgoing.length > 0 || incoming.length > 0) return 30; // collision moyenne si lié dans un sens
+                return 80; // collision forte si aucun lien
+            });
         }
+        // Force d'attraction des liens : forte si réciproque, modérée sinon
+        const linkForce = fgRef.current.d3Force('link');
+        if (linkForce) {
+            linkForce.strength(link => {
+                const reciprocal = graphData.links?.some(l => l.source === link.target && l.target === link.source);
+                return reciprocal ? 2.5 : 0.5;
+            });
+            linkForce.distance(link => {
+                const reciprocal = graphData.links?.some(l => l.source === link.target && l.target === link.source);
+                return reciprocal ? 18 : 40;
+            });
+        }
+        fgRef.current.refresh();
     }, [graphData]);
 
     // Caret clignotant : toggle toutes les 300ms, sans toucher au graph
@@ -573,6 +599,25 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
         };
     }, [graphData, allCustoms, myNodeId]);
 
+    // 1. Rafraîchit les relations et l’état du bouton lier/délier après chaque action
+    // Ajoute un appel à onGraphUpdate (refresh) après chaque création/suppression de lien
+    async function handleLink(user1_id, user2_id) {
+        await fetch('/api/relations', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user1_id, user2_id })
+        });
+        if (onGraphUpdate) onGraphUpdate();
+    }
+    async function handleUnlink(user1_id, user2_id) {
+        await fetch('/api/relations', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user1_id, user2_id, action: 'delete' })
+        });
+        if (onGraphUpdate) onGraphUpdate();
+    }
+
     return (
         <>
             <div style={{ position: 'fixed', inset: 0, zIndex: 0, pointerEvents: 'auto' }}>
@@ -590,55 +635,6 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
                     height={dimensions.height}
                 />
             </div>
-            {/* Popup classique pour les autres nodes uniquement */}
-            {selectedNode && selectedNode.id !== myNodeId && (
-                <div
-                    className="profile-popup"
-                    style={{
-                        position: 'fixed',
-                        top: 50, // décale de 20px vers le bas
-                        left: 12,
-                        width: 320,
-                        minWidth: 320,
-                        maxWidth: 320,
-                        minHeight: 120,
-                        background: 'rgba(255,255,255,0.98)',
-                        borderRadius: 16,
-                        boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-                        zIndex: 1001,
-                        padding: '28px 24px',
-                        fontFamily: 'Menlo, monospace',
-                        fontSize: 20,
-                        color: '#111',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        alignItems: 'flex-start',
-                        boxSizing: 'border-box',
-                        gap: 0
-                    }}
-                >
-                    <div style={{ fontWeight: 700, marginBottom: 12, fontSize: 24 }}>/user/{selectedNode.label || selectedNode.pseudo || selectedNode.id}</div>
-                    <div style={{ marginBottom: 30, fontSize: 18, width: '100%' }}>
-                        <span style={{ fontWeight: 600, fontSize: 18, marginRight: 10 }}>mots-clés :</span>
-                        {getKeywords(selectedNode).map((kw, i) => (
-                            <span key={i} style={{
-                                display: 'inline-block',
-                                background: '#eee',
-                                color: '#111',
-                                borderRadius: 8,
-                                padding: '4px 16px',
-                                marginRight: i < getKeywords(selectedNode).length - 1 ? 2 : 10,
-                                marginBottom: 2,
-                                fontSize: 18,
-                                fontWeight: 600,
-                                cursor: 'default',
-                                boxSizing: 'border-box',
-                            }}
-                            >{kw}{i < getKeywords(selectedNode).length - 1 ? ',' : ''}</span>
-                        ))}
-                    </div>
-                </div>
-            )}
             {/* Bouton rond noir (photo profil) en bas à droite, toujours visible si c'est moi */}
             {myNodeId && (
                 <button
