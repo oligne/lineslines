@@ -1,5 +1,4 @@
 "use client"
-
 import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import ForceGraph3D, { ForceGraphMethods } from "react-force-graph-3d";
 import * as THREE from "three";
@@ -14,15 +13,19 @@ import mouth2 from '../assets/face/mouse/mouse2.png';
 import mouth3 from '../assets/face/mouse/mouse3.png';
 import mouth4 from '../assets/face/mouse/mouse4.png';
 import mouth5 from '../assets/face/mouse/mouse5.png';
-// Ajoute une image "pas d'œil" et "pas de bouche" (index 0 = rien)
+
 import eyeNone from '../assets/face/eyes/none.png';
 import mouthNone from '../assets/face/mouse/none.png';
 
-// Chargement dynamique compatible Next.js/TypeScript
+import SidePanel from './SidePanel';
+import UserPopup from './UserPopup';
+
 const eyesImages = [eyeNone, eye1, eye2, eye3, eye4, eye5];
 const mouthImages = [mouthNone, mouth1, mouth2, mouth3, mouth4, mouth5];
 
-function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
+function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate, onCloseWelcome}) {
+    const [showWelcome, setShowWelcome] = useState(false); // false par défaut
+    const [welcomeClosedManually, setWelcomeClosedManually] = useState(false);
     const fgRef = useRef<ForceGraphMethods>(null);
     const [graphData, setGraphData] = useState({nodes: [], links: []});
     const [editingId, setEditingId] = useState(null);
@@ -43,7 +46,31 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
     const [selectedPart, setSelectedPart] = useState('eye');
     const [faceSize, setFaceSize] = useState(120); // taille du visage (min 60, max 120)
     const [allCustoms, setAllCustoms] = useState([]);
-    const [welcomeClosedManually, setWelcomeClosedManually] = useState(false);
+
+    // --- Gestion dynamique des popups utilisateurs (stacking horizontal et vertical) ---
+const [userPopups, setUserPopups] = useState([]); // [{user, relations}]
+const [popupHeights, setPopupHeights] = useState([]); // [hauteur de chaque popup]
+const [popupPositions, setPopupPositions] = useState([]); // [topPx de chaque popup]
+
+// Ouvre une popup utilisateur (exemple d'appel : openUserPopup(user, relations))
+function openUserPopup(user, relations) {
+  setUserPopups(prev => {
+    if (prev.find(p => p.user.id === user.id)) return prev;
+    return [...prev, { user, relations }];
+  });
+}
+
+
+// Recalcule les positions verticales à chaque changement
+useEffect(() => {
+  let top = showWelcome ? 120 : 32;
+  const positions = [];
+  for (let i = 0; i < userPopups.length; i++) {
+    positions[i] = top;
+    top += (popupHeights[i] || 120) + 16;
+  }
+  setPopupPositions(positions);
+}, [userPopups, popupHeights, showWelcome]);
 
     // Resize listener pour canvas plein écran
     useEffect(() => {
@@ -326,9 +353,7 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
             // setSelectedNode(null); // NE PAS fermer la popup profil perso
         } else {
             setEditingId(null);
-            setSelectedNode(node); // Affiche la popup de l'autre user
-            // NE PAS fermer la fenêtre profil perso !
-            // setShowCustomize(false); // <-- supprimé pour garder la fenêtre profil ouverte
+            openUserPopup(node, graphData.links);
             if (onUserNodeClick) onUserNodeClick(node);
         }
     }
@@ -374,47 +399,6 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
         if (Array.isArray(node.keywords)) return node.keywords;
         if (typeof node.keywords === 'string') return node.keywords.split(',').map(k => k.trim()).filter(Boolean);
         return [];
-    }
-    async function handleKeywordAdd() {
-        if (!keywordEdit.trim() || !selectedNode) return;
-        const newKeywords = [...(getKeywords(selectedNode)), keywordEdit.trim()].slice(0, 3);
-        try {
-            await fetch(`/api/users/${selectedNode.id}`, {
-                method: 'PATCH',
-                body: JSON.stringify({ keywords: newKeywords }),
-                headers: { 'Content-Type': 'application/json' },
-            });
-            if (onGraphUpdate) onGraphUpdate();
-        } catch {}
-        setGraphData(gd => ({
-            ...gd,
-            nodes: gd.nodes.map(n =>
-                n.id === selectedNode.id
-                    ? { ...n, keywords: newKeywords }
-                    : n
-            )
-        }));
-        setKeywordEdit("");
-    }
-    async function handleKeywordRemove(idx) {
-        if (!selectedNode) return;
-        const newKeywords = (getKeywords(selectedNode) || []).filter((_, i) => i !== idx);
-        try {
-            await fetch(`/api/users/${selectedNode.id}`, {
-                method: 'PATCH',
-                body: JSON.stringify({ keywords: newKeywords }),
-                headers: { 'Content-Type': 'application/json' },
-            });
-            if (onGraphUpdate) onGraphUpdate();
-        } catch {}
-        setGraphData(gd => ({
-            ...gd,
-            nodes: gd.nodes.map(n =>
-                n.id === selectedNode.id
-                    ? { ...n, keywords: newKeywords }
-                    : n
-            )
-        }));
     }
 
     // Ajoute ces deux fonctions dans le composant :
@@ -517,32 +501,37 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
                     };
                     setCustom(c); // met à jour le cercle en bas à droite
                     setCustomDraft(c); // met à jour la fenêtre de personnalisation
+                    if (onGraphUpdate) onGraphUpdate(); // Ajouté pour rafraîchir le graph après modif customface
                 });
+            // Ajout : forcer un refresh local du graphData pour déclencher le useEffect
+            setGraphData(gd => ({ ...gd, nodes: [...gd.nodes] }));
         });
     }
 
-    // Déplacement limité dans le cercle (max rayon 24px)
-    function movePart(part, dx, dy) {
-        setCustomDraft(prev => {
-            let x = (prev[part + '_x'] || 0) + dx;
-            let y = (prev[part + '_y'] || 0) + dy;
-            // Limite au cercle de rayon 24px
-            const r = Math.sqrt(x*x + y*y);
-            if (r > 24) {
-                x = (x / r) * 24;
-                y = (y / r) * 24;
-            }
-            return { ...prev, [part + '_x']: x, [part + '_y']: y };
-        });
-    }
 
-    // Change l’esthétique localement (draft)
+
     function handleChangeCustom(type, dir) {
         setCustomDraft(prev => {
             let max = type === 'eye' ? eyesImages.length : mouthImages.length;
             let next = ((prev[type] || 0) + dir + max) % max;
             return { ...prev, [type]: next };
         });
+    }
+
+        function handleCloseWelcome() {
+  setShowWelcome(false);
+  setWelcomeClosedManually(true);
+  const myNodeId = graphData.nodes.find(n => n.ip === userIp)?.id;
+  if (myNodeId) {
+    fetch(`/api/users/${myNodeId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ starter: 0 })
+      
+    });
+  }
+      if (onCloseWelcome) onCloseWelcome(); // AJOUTÉ
+
     }
 
     // Composant visage personnalisé
@@ -558,7 +547,7 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
         const mouthScale = typeof mouth_scale === 'number' ? mouth_scale : 1;
         return (
             <div style={{ position: 'relative', width: size, height: size, margin: 0, flexShrink: 0, transition: 'width 0.1s, height 0.1s' }}>
-                <div style={{ position: 'absolute', left: 0, top: 0, width: size, height: size, borderRadius: '50%', background: '#111', boxShadow: '0 2px 8px #8888', border: '2px solid #fff', zIndex: 1, transition: 'width 0.1s, height 0.1s' }} />
+                <div style={{ position: 'absolute', left: 0, top: 0, width: size, height: size, borderRadius: '50%', background: '#111', boxShadow: '0 2px 8px #8888', zIndex: 1, transition: 'width 0.1s, height 0.1s' }} />
                 {/* Eyes */}
                 {eyeIdx !== 0 && eyesImages[eyeIdx]?.src ? (
                     <img src={eyesImages[eyeIdx].src} alt="eye" style={{ position: 'absolute', left: size * 0.3 + eyeX, top: size * 0.37 + eyeY, width: size * 0.4 * eyeScale, height: size * 0.18 * eyeScale, zIndex: 2, transition: 'left 0.1s, top 0.1s, width 0.1s, height 0.1s' }} />
@@ -574,6 +563,8 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
             </div>
         );
     }
+
+
 
     // Fusionne la customisation dans le node courant avant le rendu du graph, mais seulement quand custom/myNodeId/graphData changent
     const mergedGraphData = useMemo(() => {
@@ -599,24 +590,25 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
         };
     }, [graphData, allCustoms, myNodeId]);
 
-    // 1. Rafraîchit les relations et l’état du bouton lier/délier après chaque action
-    // Ajoute un appel à onGraphUpdate (refresh) après chaque création/suppression de lien
-    async function handleLink(user1_id, user2_id) {
-        await fetch('/api/relations', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user1_id, user2_id })
-        });
-        if (onGraphUpdate) onGraphUpdate();
-    }
-    async function handleUnlink(user1_id, user2_id) {
-        await fetch('/api/relations', {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user1_id, user2_id, action: 'delete' })
-        });
-        if (onGraphUpdate) onGraphUpdate();
-    }
+    // Vérifie le statut "starter" de l'utilisateur et affiche ou non le panneau de bienvenue
+    useEffect(() => {
+        const myNodeId = graphData.nodes.find(n => n.ip === userIp)?.id;
+        if (!myNodeId) return;
+        fetch(`/api/users/${myNodeId}`)
+            .then(async r => {
+                if (!r.ok) {
+                    setShowWelcome(false);
+                    return;
+                }
+                const user = await r.json();
+                if (user && user.starter === 0) {
+                    setShowWelcome(false);
+                } else {
+                    setShowWelcome(true);
+                }
+            })
+            .catch(() => setShowWelcome(false));
+    }, [graphData, userIp]);
 
     return (
         <>
@@ -635,6 +627,9 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
                     height={dimensions.height}
                 />
             </div>
+
+
+
             {/* Bouton rond noir (photo profil) en bas à droite, toujours visible si c'est moi */}
             {myNodeId && (
                 <button
@@ -646,10 +641,10 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
                         position: 'fixed',
                         right: 24,
                         bottom: 24,
-                        width: faceSize, // identique à la bulle de personnalisation
-                        height: faceSize,
+                        width: faceSize * 0.65, // réduit la taille du rond
+                        height: faceSize * 0.65,
                         borderRadius: '50%',
-                        background: 'transparent', // pour laisser CustomFace gérer le fond
+                        background: 'transparent',
                         border: 'none',
                         boxShadow: '0 2px 8px rgba(0,0,0,0.10)',
                         zIndex: 1100,
@@ -661,9 +656,11 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
                     }}
                     title="Profil perso"
                 >
-                    <CustomFace {...custom} size={faceSize} />
+                    <CustomFace {...custom} size={faceSize * 0.65} />
                 </button>
             )}
+
+
             {/* Popup profil perso (avec bouton personnaliser) */}
             {showCustomize && myNodeId && selectedNode && selectedNode.id === myNodeId && (
                 <div
@@ -807,6 +804,8 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
                     </button>
                 </div>
             )}
+
+
             {/* Fenêtre minimaliste de personnalisation à droite de la popup profil perso */}
             {showMiniCustomize && myNodeId && (
                 <div className="mini-customize-popup" style={{
@@ -868,8 +867,14 @@ function FocusGraph({data, userIp, onUserNodeClick, onGraphUpdate}) {
                     </div>
                 </div>
             )}
+
+            {showWelcome && <SidePanel onClose={handleCloseWelcome} />}
+
+
         </>
     );
 }
+
+
 
 export default FocusGraph;

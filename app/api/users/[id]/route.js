@@ -45,3 +45,20 @@ export async function PATCH(request, context) {
   });
   return Response.json(result.rows[0]);
 }
+
+export async function GET(request, context) {
+  try {
+    const params = await context.params;
+    const id = typeof params === 'object' && 'id' in params ? params.id : params;
+    const result = await turso.execute({
+      sql: 'SELECT * FROM users WHERE id = ?',
+      args: [id],
+    });
+    if (!result.rows[0]) {
+      return new Response(JSON.stringify({ error: 'User not found' }), { status: 404 });
+    }
+    return Response.json(result.rows[0]);
+  } catch (e) {
+    return new Response(JSON.stringify({ error: e.message || e.toString() }), { status: 500 });
+  }
+}

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import lieIcon from '../assets/icons/lie.png';
 import delieIcon from '../assets/icons/delie.png';
 
-export default function UserPopup({ user, me, relations, onClose, small, showPseudo, onCreateRelation, onDeleteRelation, isLinkedReverse }) {
+export default function UserPopup({ user, me, relations, onClose, small, showPseudo, onCreateRelation, onDeleteRelation, isLinkedReverse, welcomePanelVisible, popupIndex, topPx, onHeight, onGraphUpdate }) {
   let keywordsArr = [];
   if (Array.isArray(user.keywords)) {
     keywordsArr = user.keywords;
@@ -28,6 +28,7 @@ export default function UserPopup({ user, me, relations, onClose, small, showPse
       });
       setKeywords(newKeywords);
       setKeywordEdit("");
+      if (typeof onGraphUpdate === 'function') onGraphUpdate();
     } finally {
       setLoading(false);
     }
@@ -42,30 +43,53 @@ export default function UserPopup({ user, me, relations, onClose, small, showPse
         headers: { 'Content-Type': 'application/json' },
       });
       setKeywords(newKeywords);
+      if (typeof onGraphUpdate === 'function') onGraphUpdate();
     } finally {
       setLoading(false);
     }
   }
+
+  const popupRef = useRef(null);
+  const lastHeightRef = useRef(0);
+  useEffect(() => {
+    if (popupRef.current && onHeight) {
+      const h = popupRef.current.offsetHeight;
+      if (h !== lastHeightRef.current) {
+        lastHeightRef.current = h;
+        onHeight(popupIndex, h);
+      }
+    }
+  }, [onHeight, popupIndex, keywords, small, showPseudo, welcomePanelVisible]);
+
   const displayName = user?.pseudo || user?.label || '';
+
+  const PANEL_WIDTH = 320; // largeur du panneau de bienvenue
+  const PANEL_GAP = 24; // espace horizontal
+  // Décalage horizontal UNIQUEMENT si le panneau de bienvenue est VISIBLE (open)
+  const rightPx = welcomePanelVisible ? (20 + PANEL_WIDTH + PANEL_GAP) : 32;
+
   return (
-    <div className={small ? 'user-popup-small' : 'user-popup'} style={{
-      position: 'relative',
+    <div ref={popupRef} className={'user-popup-small'} style={{
+      position: 'fixed',
+      top: topPx,
+      right: rightPx,
+      transition: 'right 0.25s cubic-bezier(.4,2,.6,1)',
       background: '#fff',
-      border: '1px solid #ddd',
-      borderRadius: 12,
+      border: '0px solid #ddd',
+      borderRadius: 18,
       boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
-      padding: small ? '20px 28px 18px 28px' : '20px 28px 18px 28px',
+      padding: '20px 28px 18px 28px',
       width: 320,
       minWidth: 320,
       maxWidth: 320,
       fontFamily: 'Menlo, monospace',
-      fontSize: small ? 16 : 20,
-      marginBottom: -20,
-      marginTop: 20,
+      fontSize: 16,
       pointerEvents: 'auto',
-      zIndex: 1,
+      zIndex: 2000,
       boxSizing: 'border-box',
-      overflow: 'visible'
+      overflow: 'visible',
+      marginBottom: 0,
+      marginTop: 0,
     }}>
       <button onClick={onClose} style={{ position: 'absolute', top: 4, right: 8, fontSize: 14, background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
       <div style={{ fontWeight: 700, fontSize: small ? 16 : 20, marginBottom: 4, fontFamily: 'Menlo' }}>
@@ -192,3 +216,5 @@ export default function UserPopup({ user, me, relations, onClose, small, showPse
     </div>
   );
 }
+
+
