@@ -158,7 +158,6 @@ useEffect(() => {
     // Fermer le profil si on clique dans le vide
     useEffect(() => {
         function handleClick(e) {
-            // Ne ferme le profil que si clic hors .profile-popup ET hors .mini-customize-popup ET hors .customize-arrow-btn (flèches et labels)
             if (
                 !e.target.closest('.profile-popup') &&
                 !e.target.closest('.mini-customize-popup') &&
@@ -167,6 +166,11 @@ useEffect(() => {
                 setSelectedNode(null);
                 setShowCustomize(false);
                 setShowMiniCustomize(false);
+                // Revenir à la vue initiale (zoomToFit) seulement si recherche
+                if (isSearchFocused && fgRef.current) {
+                    fgRef.current.zoomToFit(0, 120); // zoom plus proche
+                    setIsSearchFocused(false);
+                }
             }
         }
         window.addEventListener('mousedown', handleClick);
@@ -539,26 +543,32 @@ useEffect(() => {
         // Sécurise les index et les valeurs
         const eyeIdx = typeof eye === 'number' && eye > 0 && eye < eyesImages.length ? eye : 0;
         const mouthIdx = typeof mouth === 'number' && mouth > 0 && mouth < mouthImages.length ? mouth : 0;
-        const eyeX = typeof eye_x === 'number' ? eye_x : 0;
-        const eyeY = typeof eye_y === 'number' ? eye_y : 0;
-        const mouthX = typeof mouth_x === 'number' ? mouth_x : 0;
-        const mouthY = typeof mouth_y === 'number' ? mouth_y : 0;
+        // Adapter les offsets proportionnellement à la taille
+        const baseSize = 120;
+        const scale = size / baseSize;
+        // Correction : la position Y des yeux doit être centrée verticalement comme dans le canvas
+        const baseEyeLeft = 0.3, baseEyeTop = 0.37, baseMouthLeft = 0.3, baseMouthTop = 0.67;
         const eyeScale = typeof eye_scale === 'number' ? eye_scale : 1;
         const mouthScale = typeof mouth_scale === 'number' ? mouth_scale : 1;
+        // Correction : positionnement identique au canvas (nodeThreeObject)
+        const eyeX = size * baseEyeLeft + (typeof eye_x === 'number' ? eye_x : 0) * scale;
+        const eyeY = size * baseEyeTop + (typeof eye_y === 'number' ? eye_y : 0) * scale;
+        const mouthX = size * baseMouthLeft + (typeof mouth_x === 'number' ? mouth_x : 0) * scale;
+        const mouthY = size * baseMouthTop + (typeof mouth_y === 'number' ? mouth_y : 0) * scale;
         return (
             <div style={{ position: 'relative', width: size, height: size, margin: 0, flexShrink: 0, transition: 'width 0.1s, height 0.1s' }}>
                 <div style={{ position: 'absolute', left: 0, top: 0, width: size, height: size, borderRadius: '50%', background: '#111', boxShadow: '0 2px 8px #8888', zIndex: 1, transition: 'width 0.1s, height 0.1s' }} />
                 {/* Eyes */}
                 {eyeIdx !== 0 && eyesImages[eyeIdx]?.src ? (
-                    <img src={eyesImages[eyeIdx].src} alt="eye" style={{ position: 'absolute', left: size * 0.3 + eyeX, top: size * 0.37 + eyeY, width: size * 0.4 * eyeScale, height: size * 0.18 * eyeScale, zIndex: 2, transition: 'left 0.1s, top 0.1s, width 0.1s, height 0.1s' }} />
+                    <img src={eyesImages[eyeIdx].src} alt="eye" style={{ position: 'absolute', left: eyeX, top: eyeY, width: size * 0.4 * eyeScale, height: size * 0.18 * eyeScale, zIndex: 2, transition: 'left 0.1s, top 0.1s, width 0.1s, height 0.1s' }} />
                 ) : eyeIdx !== 0 ? (
-                    <div style={{position:'absolute',left:size*0.3,top:size*0.37,width:size*0.4,height:size*0.18,zIndex:2,background:'#e22',color:'#fff',fontWeight:900,fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}}>?</div>
+                    <div style={{position:'absolute',left:eyeX,top:eyeY,width:size*0.4,height:size*0.18,zIndex:2,background:'#e22',color:'#fff',fontWeight:900,fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}}>?</div>
                 ) : null}
                 {/* Mouth */}
                 {mouthIdx !== 0 && mouthImages[mouthIdx]?.src ? (
-                    <img src={mouthImages[mouthIdx].src} alt="mouth" style={{ position: 'absolute', left: size * 0.3 + mouthX, top: size * 0.67 + mouthY, width: size * 0.4 * mouthScale, height: size * 0.18 * mouthScale, zIndex: 3, transition: 'left 0.1s, top 0.1s, width 0.1s, height 0.1s' }} />
+                    <img src={mouthImages[mouthIdx].src} alt="mouth" style={{ position: 'absolute', left: mouthX, top: mouthY, width: size * 0.4 * mouthScale, height: size * 0.18 * mouthScale, zIndex: 3, transition: 'left 0.1s, top 0.1s, width 0.1s, height 0.1s' }} />
                 ) : mouthIdx !== 0 ? (
-                    <div style={{position:'absolute',left:size*0.3,top:size*0.67,width:size*0.4,height:size*0.18,zIndex:3,background:'#e22',color:'#fff',fontWeight:900,fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}}>?</div>
+                    <div style={{position:'absolute',left:mouthX,top:mouthY,width:size*0.4,height:size*0.18,zIndex:3,background:'#e22',color:'#fff',fontWeight:900,fontSize:18,display:'flex',alignItems:'center',justifyContent:'center'}}>?</div>
                 ) : null}
             </div>
         );
@@ -609,6 +619,43 @@ useEffect(() => {
             })
             .catch(() => setShowWelcome(false));
     }, [graphData, userIp]);
+
+    // --- Recherche par pseudo ---
+    const [searchValue, setSearchValue] = useState("");
+    const [searchError, setSearchError] = useState("");
+    const [isSearchFocused, setIsSearchFocused] = useState(false);
+    function handleSearch(e) {
+        e.preventDefault();
+        setSearchError("");
+        const val = searchValue.trim().toLowerCase().replace(/\s+/g, "");
+        if (!val) return;
+        let node = mergedGraphData.nodes.find(n =>
+            (n.label && n.label.toLowerCase().replace(/\s+/g, "") === val) ||
+            (n.pseudo && n.pseudo.toLowerCase().replace(/\s+/g, "") === val) ||
+            (String(n.id).toLowerCase() === val)
+        );
+        if (!node) {
+            node = mergedGraphData.nodes.find(n =>
+                (n.label && n.label.toLowerCase().replace(/\s+/g, "").includes(val)) ||
+                (n.pseudo && n.pseudo.toLowerCase().replace(/\s+/g, "").includes(val))
+            );
+        }
+        if (!node) {
+            setSearchError("Aucun utilisateur trouvé");
+            return;
+        }
+        // Centre la caméra sur le node trouvé (distance z plus proche)
+        if (fgRef.current) {
+            if (node && node.x !== undefined && node.y !== undefined && node.z !== undefined) {
+                fgRef.current.cameraPosition(
+                    { x: node.x, y: node.y, z: node.z + 40 },
+                    { x: node.x, y: node.y, z: node.z },
+                    800
+                );
+                setIsSearchFocused(true);
+            }
+        }
+    }
 
     return (
         <>
@@ -871,6 +918,44 @@ useEffect(() => {
             {showWelcome && <SidePanel onClose={handleCloseWelcome} />}
 
 
+            {/* Champ de recherche pseudo en haut à droite */}
+            <form onSubmit={handleSearch} style={{ position: 'fixed', top: 55, left: 20, zIndex: 1200, display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.95)', borderRadius: 12, boxShadow: '0 2px 12px #0001', padding: '7px 16px 7px 16px' }}>
+                <input
+                    type="text"
+                    placeholder="rechercher un pseudo..."
+                    value={searchValue}
+                    onChange={e => { setSearchValue(e.target.value); setSearchError(""); }}
+                    style={{ fontSize: 18, fontFamily: 'Menlo, monospace', border: 'none', outline: 'none', background: 'transparent', color: '#111', width: 180, padding: 0, margin: 0 }}
+                />
+                <button type="submit" style={{ fontSize: 18, fontWeight: 700, border: 'none', background: '#eee', color: '#111', borderRadius: 8, padding: '4px 16px', cursor: 'pointer', boxShadow: '0 1px 4px #eee' }}>recherche</button>
+                <button
+        type="button"
+        style={{ fontSize: 18, fontWeight: 700, border: 'none', background: '#fff', color: '#111', borderRadius: 8, padding: '4px 16px', cursor: 'pointer', boxShadow: '0 1px 4px #eee', marginLeft: 4 }}
+        onClick={() => {
+            setSelectedNode(null);
+            setShowCustomize(false);
+            setShowMiniCustomize(false);
+            setSearchError("");
+            setSearchValue("");
+            setIsSearchFocused(false);
+            // Recentre la caméra comme à l'init
+            if (fgRef.current) {
+                const n = graphData.nodes.length || 1;
+                const z = Math.max(-100, Math.min(200, n * 25));
+                fgRef.current.cameraPosition(
+                    { x: 0, y: 0, z },
+                    { x: 0, y: 0, z: 0 },
+                    800
+                );
+            }
+        }}
+        title="Vue initiale"
+    >OK</button>
+                {searchError && <span style={{ color: '#111', fontSize: 15, marginLeft: 8 }}>{searchError}</span>}
+            </form>
+
+            {/* Bouton refresh pour recadrer sur soi */}
+            
         </>
     );
 }

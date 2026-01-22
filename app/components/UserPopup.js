@@ -71,7 +71,7 @@ export default function UserPopup({ user, me, relations, onClose, small, showPse
   return (
     <div ref={popupRef} className={'user-popup-small'} style={{
       position: 'fixed',
-      top: topPx,
+      top: topPx + 20,
       right: rightPx,
       transition: 'right 0.25s cubic-bezier(.4,2,.6,1)',
       background: '#fff',
